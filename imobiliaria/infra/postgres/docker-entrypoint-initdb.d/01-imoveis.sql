@@ -6,3 +6,7 @@ CREATE ROLE imoveis_dono WITH LOGIN PASSWORD :'senha_dono';
 CREATE ROLE imoveis_app WITH LOGIN PASSWORD :'senha_app';
 
 CREATE DATABASE imoveis OWNER imoveis_dono;
+
+REVOKE CONNECT ON DATABASE imoveis FROM PUBLIC;
+
+GRANT CONNECT ON DATABASE imoveis to imoveis_app;
