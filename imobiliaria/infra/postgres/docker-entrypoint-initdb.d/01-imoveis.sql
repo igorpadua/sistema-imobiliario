@@ -10,3 +10,9 @@ CREATE DATABASE imoveis OWNER imoveis_dono;
 REVOKE CONNECT ON DATABASE imoveis FROM PUBLIC;
 
 GRANT CONNECT ON DATABASE imoveis to imoveis_app;
+
+\connect imoveis
+
+CREATE EXTENSION postgis;
+
+CREATE EXTENSION pg_trgm;
