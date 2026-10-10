@@ -6,6 +6,8 @@ services:
       POSTGRES_DB: postgres
       POSTGRES_USER: ${DB_USER}
       POSTGRES_PASSWORD: ${DB_PASSWORD}
+      DB_PASSWORD_IMOVEIS_DONO: ${DB_PASSWORD_IMOVEIS_DONO}
+      DB_PASSWORD_IMOVEIS_APP: ${DB_PASSWORD_IMOVEIS_APP}
     ports:
       - "5432:5432"
     volumes:
