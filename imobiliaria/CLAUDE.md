@@ -109,9 +109,9 @@ Priorize explicações e revisões ligadas a estes temas:
 Estrutura do repositório:
 
 ```
-build-logic/        # convention plugins do Gradle (extraídos na etapa 3)
+build-logic/        # convention plugins do Gradle (extraídos na etapa 4)
 libs/
-  starter/          # tenant, RLS, outbox, consumidor idempotente, segurança (extraído na etapa 3)
+  starter/          # tenant, RLS, outbox, consumidor idempotente, segurança (extraído na etapa 4)
   eventos-schemas/  # schemas Avro + classes geradas
 servicos/
   imoveis/  pessoas/  contratos/  financeiro/  ...
@@ -181,7 +181,7 @@ docs/
 - **BFF:** fluxo Authorization Code com PKCE. Os tokens ficam no Redis; o navegador recebe só o cookie `__Host-sid` (`HttpOnly`, `Secure`, `SameSite=Lax`). O BFF guarda o tenant ativo e envia `X-Tenant-Id` em cada chamada aos serviços.
 - **Cada serviço valida o JWT** (assinatura, `iss`, `aud`, `exp`) e só aceita o `X-Tenant-Id` se o tenant estiver no claim `tenants`. Os papéis valem só para o tenant ativo: quem é `admin` em um tenant e `corretor` em outro tem, em cada chamada, apenas os papéis do tenant do `X-Tenant-Id`.
 - **Chamadas entre serviços:** token de client credentials, com papel `servico`.
-- **Desenvolvimento antes do BFF:** um client público, só de desenvolvimento, com Authorization Code + PKCE, usado a partir de um cliente HTTP (Bruno, Postman ou Insomnia). O token dele também precisa da audiência `imob-api`. O realm importado traz dois tenants fixos e usuários por papel, incluindo um usuário em dois tenants com papéis diferentes. Até a etapa 11, os tenants existem só por esse import e por carga inicial.
+- **Desenvolvimento antes do BFF:** um client público, só de desenvolvimento, com Authorization Code + PKCE, usado a partir de um cliente HTTP (Bruno, Postman ou Insomnia). O token dele também precisa da audiência `imob-api`. O realm importado traz dois tenants fixos e usuários por papel, incluindo um usuário em dois tenants com papéis diferentes. Até a etapa 12, os tenants existem só por esse import e por carga inicial. Antes da etapa 3, que traz o Keycloak, a segurança é exercitada só nos testes, com `jwt()`.
 - **Armadilha do Docker:** o `iss` do token é a URL pública do Keycloak. Configure `KC_HOSTNAME` com a URL pública e `KC_HOSTNAME_BACKCHANNEL_DYNAMIC=true`. Nos serviços, use `jwk-set-uri` com o endereço interno e valide o issuer explicitamente com a URL pública.
 - **Webhooks de banco** não passam pelo Keycloak: a autenticação é por HMAC, mTLS ou lista de IPs, conforme o banco. O tenant vem da URL.
 
@@ -266,16 +266,16 @@ Um padrão entra quando resolve um problema real do projeto, não por antecipaç
 | Factory Method (método de fábrica estático) | criação de agregados que já nascem válidos | 2 |
 | Transactional Outbox | evento gravado na mesma transação do dado | 2 |
 | Test Data Builder | montagem de dados nos testes (`umImovel()...build()`) | a partir da 2 |
-| Idempotent Consumer | consumidores Kafka | 3 |
-| Anti-Corruption Layer | tradução de eventos de outros serviços para o modelo local; Bancário normalizando tudo em `PagamentoRecebido` | 3 e 6 |
-| Command e State | comandos do contrato (`sealed interface Comando`) e máquina de estados. Este arquivo já escolheu função pura com sealed interface; vale comparar com o State clássico do GoF | 4 |
-| Specification | condições de cada transição do contrato, combináveis entre si | 4 |
-| Saga coreografada | encerramento, acerto final e repasse, passando por vários serviços | 4 a 7 |
-| Strategy | multa e juros, índice de reajuste, canal de notificação | 4, 5 e 9 |
-| Adapter + Strategy | `GatewayBancario` (API, CNAB 240, CNAB 400) escolhido por tenant; fonte de índices | 6 e 8 |
-| Template Method | estrutura comum de leitura e geração dos arquivos CNAB 240 e 400 | 6 |
-| CQRS e projeções | Relatórios | 10 |
-| BFF e API Composition | agregação de dados para o front | 11 |
+| Idempotent Consumer | consumidores Kafka | 4 |
+| Anti-Corruption Layer | tradução de eventos de outros serviços para o modelo local; Bancário normalizando tudo em `PagamentoRecebido` | 4 e 7 |
+| Command e State | comandos do contrato (`sealed interface Comando`) e máquina de estados. Este arquivo já escolheu função pura com sealed interface; vale comparar com o State clássico do GoF | 5 |
+| Specification | condições de cada transição do contrato, combináveis entre si | 5 |
+| Saga coreografada | encerramento, acerto final e repasse, passando por vários serviços | 5 a 8 |
+| Strategy | multa e juros, índice de reajuste, canal de notificação | 5, 6 e 10 |
+| Adapter + Strategy | `GatewayBancario` (API, CNAB 240, CNAB 400) escolhido por tenant; fonte de índices | 7 e 9 |
+| Template Method | estrutura comum de leitura e geração dos arquivos CNAB 240 e 400 | 7 |
+| CQRS e projeções | Relatórios | 11 |
+| BFF e API Composition | agregação de dados para o front | 12 |
 
 ### Testes
 
@@ -400,6 +400,10 @@ Um padrão entra quando resolve um problema real do projeto, não por antecipaç
 
 Itens que ainda precisam de decisão, agrupados pela etapa em que passam a bloquear o trabalho. Ao decidir, mova o item para a seção correspondente deste arquivo.
 
+### Etapa 1: Infraestrutura base
+
+- **Criação automática de tópicos:** ligada ou desligada no broker. Desligada evita que um erro de digitação crie um tópico silenciosamente, mas exige criar os tópicos de forma explícita.
+
 ### Etapa 2: Imóveis
 
 - **Tipo dos ids:** `tenant_id` e ids dos agregados (UUID? qual versão?). Afeta o cast na policy do RLS e os schemas Avro.
@@ -409,19 +413,24 @@ Itens que ainda precisam de decisão, agrupados pela etapa em que passam a bloqu
 - **Envelope do evento:** campo com o tipo do evento; se `versao` é a versão do agregado; um evento de integração por transação (dois eventos do mesmo comando com a mesma versão fariam o consumidor descartar o segundo); eventos sem agregado, como `PagamentoRecebido`.
 - **Vários tipos de evento por tópico:** a estratégia padrão do Schema Registry (`TopicNameStrategy`) aceita um schema por tópico. Opções: `RecordNameStrategy`, `TopicRecordNameStrategy`, union ou envelope por agregado.
 - **Modo de compatibilidade:** "compatível com a versão anterior" equivale a `BACKWARD` não transitivo. O replay de tópicos com retenção infinita pede um modo transitivo (`FULL_TRANSITIVE` cobre consumidores novos e antigos). Definir também como o build verifica.
-- **Local dos schemas Avro:** dentro de Imóveis até a etapa 3 ou já em `libs/eventos-schemas`.
+- **Local dos schemas Avro:** dentro de Imóveis até a etapa 4 ou já em `libs/eventos-schemas`.
 - **Representação de dinheiro:** centavos em `long` ou `BigDecimal`, com o tipo correspondente no Postgres e no Avro (o preço da oferta já precisa disso).
 - **Escala dos percentuais:** com quantas casas o percentual de posse soma "exatamente 100" (ex.: 33,33 + 33,33 + 33,34).
 - **Datas e fuso:** tipo de `ocorridoEm` (`Instant` em UTC?), da competência (`YearMonth`?) e fuso dos jobs (`America/Sao_Paulo`?).
 - **Status HTTP restantes:** erro de formato ou validação (400?), conflito pego pelo `@Version` (409 ou 412?) e requisição sem `If-Match` (428 ou aceitar?).
 
-### Etapa 3: Pessoas
+### Etapa 3: Identidade
+
+- **Roteamento no Traefik:** por host (`keycloak.localhost`, `api.localhost`) ou por caminho (`localhost/auth`). Confira antes se `getent hosts keycloak.localhost` resolve para 127.0.0.1.
+- **Armazenamento do Keycloak:** efêmero, com o JSON do realm como fonte da verdade, ou banco próprio.
+
+### Etapa 4: Pessoas
 
 - **Critério de idempotência:** tabela de eventos processados × upsert por versão. Sugestão: upsert para projeções de estado; tabela para consumidores com efeito colateral.
 - **DLQ por tópico ou por (tópico, consumidor):** com dois consumidores no mesmo tópico, uma DLQ compartilhada não indica quem falhou, e o reprocessamento entregaria a mensagem aos dois.
 - **Índice cego:** normalização antes do HMAC (pontuação, maiúsculas no CNPJ alfanumérico) e chave por tenant ou global (a global permite correlacionar a mesma pessoa entre tenants).
 
-### Etapa 4: Contratos
+### Etapa 5: Contratos
 
 - **Estados como sealed interface × entidade JPA:** um estado modelado como sealed interface não vira coluna diretamente. Opções: enum simples, ou sealed interface persistida por um conversor.
 - **Token de serviço × `X-Tenant-Id`:** o token de client credentials não tem o claim `tenants`; definir como o tenant é aceito nessas chamadas.
@@ -431,16 +440,16 @@ Itens que ainda precisam de decisão, agrupados pela etapa em que passam a bloqu
 - **Locação não residencial** (ação renovatória, art. 51): dentro ou fora do escopo.
 - **Reajuste:** qual janela de 12 meses (o índice é publicado com defasagem) e se o acumulado vem do produto das taxas mensais ou do número-índice (podem divergir na última casa).
 
-### Etapas 5 a 7: Financeiro, Bancário e Repasses
+### Etapas 6 a 8: Financeiro, Bancário e Repasses
 
 - **Arredondamento:** modo (`HALF_EVEN` ou `HALF_UP`) e quem fica com o centavo que sobra no rateio do repasse.
 - **Vencimento** em fim de semana ou feriado; tamanho da janela móvel de parcelas.
 
-### Etapa 10: Relatórios
+### Etapa 11: Relatórios
 
 - **DIMOB e informe de rendimentos × eventos sem documento:** Relatórios precisa de CPF/CNPJ, que os eventos não trazem. Opções: consulta interna a Pessoas (ampliando a exceção às chamadas síncronas) ou geração em outro serviço.
 
-### Etapa 11: Tenants e BFF
+### Etapa 12: Tenants e BFF
 
 - **Cadastro de tenants × "não existe entidade global":** a tabela de tenants é uma exceção ou também fica sob RLS.
 - **Portal do cliente:** como o usuário do Keycloak se liga à `Pessoa`, e se o client separado implica outro BFF.
@@ -461,20 +470,21 @@ Itens que ainda precisam de decisão, agrupados pela etapa em que passam a bloqu
 
 ## Ordem de implementação e status
 
-- [ ] 1. Infraestrutura: Docker Compose com Postgres (PostGIS, um database por serviço), Kafka (KRaft), Confluent Schema Registry, Kafka UI, Keycloak (realm importado com dois tenants e client de desenvolvimento) e Traefik.
-- [ ] 2. Imóveis: primeiro serviço, com RLS, validação de token e outbox. Pronto quando um imóvel criado gera o evento no Kafka, com o tenant no header.
-- [ ] 3. Pessoas: primeiro consumidor de eventos de outro serviço. Aqui o starter interno e os convention plugins são extraídos.
-- [ ] 4. Contratos: máquina de estados e regras da Lei do Inquilinato.
-- [ ] 5. Financeiro e banco fake
-- [ ] 6. Bancário: adaptadores de API e de CNAB.
-- [ ] 7. Repasses
-- [ ] 8. Índices
-- [ ] 9. Documentos e Notificações
-- [ ] 10. Relatórios
-- [ ] 11. Tenants e BFF completos
+- [ ] 1. Infraestrutura base: Docker Compose com Postgres (PostGIS, um database por serviço), Kafka (KRaft), Confluent Schema Registry e Kafka UI.
+- [ ] 2. Imóveis: primeiro serviço, com RLS, validação de token (testada com `jwt()`, ainda sem Keycloak) e outbox. Pronto quando um imóvel criado gera o evento no Kafka, com o tenant no header.
+- [ ] 3. Identidade: Keycloak (realm importado com dois tenants e client de desenvolvimento) e Traefik. Pronto quando o Imóveis aceita um token real obtido pelo client de desenvolvimento e recusa um `X-Tenant-Id` fora do token.
+- [ ] 4. Pessoas: primeiro consumidor de eventos de outro serviço. Aqui o starter interno e os convention plugins são extraídos.
+- [ ] 5. Contratos: máquina de estados e regras da Lei do Inquilinato.
+- [ ] 6. Financeiro e banco fake
+- [ ] 7. Bancário: adaptadores de API e de CNAB.
+- [ ] 8. Repasses
+- [ ] 9. Índices
+- [ ] 10. Documentos e Notificações
+- [ ] 11. Relatórios
+- [ ] 12. Tenants e BFF completos
 - [ ] Opcional, depois do marco: reescrever um serviço já pronto em outra linguagem, sem alterar os demais, para provar que os contratos de eventos estão desacoplados.
 
-**Etapa atual:** 1. Infraestrutura
+**Etapa atual:** 1. Infraestrutura base
 
 **Notas da etapa:**
 <!-- atualize aqui o que está em andamento e as dúvidas abertas -->
