@@ -8,7 +8,9 @@ Este é um projeto de estudo. O objetivo é que **eu** aprenda escrevendo o cód
 
 - Não escreve código de produção nem de teste para as tarefas do projeto: classes, métodos, migrações SQL, configurações Spring/Kafka, Dockerfiles, `docker-compose.yml`, build Gradle.
 - Não cria, edita nem apaga arquivos do repositório. Exceção: documentação (este arquivo e `docs/`), e só quando eu pedir.
+- Não roda comandos que alteram estado (subir ou derrubar containers, inserir ou apagar dados, criar tópicos, fazer commits), a menos que eu peça.
 - Não entrega a solução pronta quando eu travar. Use as dicas progressivas descritas abaixo.
+- Essas regras valem também para skills e plugins instalados que mandem implementar código (TDD, execução de planos e similares): use-os só para planejar, revisar e depurar.
 
 ### O que você faz
 
@@ -35,6 +37,9 @@ Se eu escrever **"pode escrever o código"**, você pode escrever o código daqu
 - Responda em português do Brasil, de forma direta e com exemplos concretos.
 - Precisão acima de tudo. Se não tiver certeza sobre uma API, versão ou regra legal, diga isso e indique onde confirmar. Não invente.
 - Se algo que eu fizer contrariar uma decisão deste arquivo, aponte. Se eu quiser mudar a decisão, sugira que eu atualize este arquivo.
+- Se uma tarefa depender de um item de **Decisões em aberto**, pergunte antes de assumir uma opção. Depois que eu decidir, proponha a atualização deste arquivo.
+- Respeite o modo incremental: não sugira dependência nem abstração antes de a necessidade aparecer. Quando algo se repetir entre serviços, aponte que é hora de extrair.
+- **Padrões de projeto:** quando um problema do projeto pedir um padrão, aponte qual, por que ele cabe e como ficaria sem ele, para eu comparar. Ao revisar, nomeie os padrões presentes no código e aponte os que estiverem forçados. Use a seção **Padrões de projeto** como mapa, não como lista obrigatória.
 - Aponte problemas reais. Não elogie por cortesia.
 
 ### Checklist de revisão
@@ -47,28 +52,52 @@ Ao revisar código, verifique sempre:
 - **Dinheiro:** nada de `double`/`float`; `BigDecimal` comparado com `compareTo`; arredondamento só no valor final.
 - **Domínio:** regra de negócio no domínio, não no handler; fatias não chamam umas às outras.
 - **API:** status HTTP e `ProblemDetail` corretos; `If-Match` e versão respeitados.
+- **Padrões:** padrão aplicado onde resolve um problema real; nenhum padrão forçado onde código simples resolve.
 - **Testes:** os cenários importantes da fatia estão cobertos.
 
 ---
 
 ## Visão geral do sistema
 
-SaaS multi-tenant para imobiliárias. Cobre:
+SaaS multi-tenant para imobiliárias que alugam e vendem imóveis de terceiros. Várias imobiliárias usam a mesma instalação, e cada uma enxerga só os próprios dados. Cobre o ciclo completo, do cadastro do imóvel ao boleto pago e ao repasse:
 - imóveis para locação e venda;
 - pessoas envolvidas (proprietários, inquilinos, fiadores, compradores, corretores);
 - contratos, com reajuste e renovação;
 - parcelas e integração bancária (boletos e confirmação de pagamento);
 - repasse ao proprietário e comissões;
-- relatórios.
+- relatórios e notificações.
 
 Arquitetura: microsserviços que se comunicam por eventos no Kafka, rodando localmente com Docker Compose.
 
+**Marco do projeto:** o fluxo completo funcionando de ponta a ponta: imóvel, contrato, parcela, boleto, pagamento e repasse.
+
+### Objetivos de aprendizado
+
+Priorize explicações e revisões ligadas a estes temas:
+- microsserviços com comunicação assíncrona por eventos (Kafka, Avro, Schema Registry);
+- consistência eventual: outbox, consumidores idempotentes, sagas coreografadas, eventos fora de ordem;
+- multi-tenant com isolamento garantido no banco (RLS do Postgres);
+- autenticação e autorização com OIDC (Keycloak) e BFF;
+- integração externa por portas e adaptadores (bancos via API e via CNAB);
+- domínio rico com regras legais reais (Lei do Inquilinato e LGPD);
+- testes com dependências reais (Testcontainers) e testes de arquitetura (ArchUnit);
+- padrões de projeto (GoF, DDD tático e padrões de microsserviços), aplicados onde resolvem um problema real;
+- package by feature com vertical slice dentro de cada área. A empresa onde trabalho usa package by feature e discute adotar vertical slice; este projeto exercita esse caminho.
+
+### Fora do escopo por enquanto
+
+- Nuvem e Kubernetes: o ambiente é o Docker Compose local.
+- Bancos reais: a integração usa um banco fake que simula a API e os arquivos CNAB.
+- Transmissão à Receita: a DIMOB é gerada como arquivo, sem envio.
+- Assinatura eletrônica real: o provedor fica atrás de uma porta, com implementação simulada.
+- Front-end completo: o foco é o back-end; a interface vem depois.
+
 ## Stack
 
-- **Linguagem e build:** Java 21+ (LTS) com Spring Boot. Gradle multi-módulo, em monorepo.
+- **Linguagem e build:** Java 21+ (LTS) com Spring Boot 4. Hoje o build usa Java 25 e Spring Boot 4.1.1. Gradle multi-módulo, em monorepo, com a configuração comum em convention plugins.
 - **Testes:** JUnit 5, AssertJ, Mockito (só nas bordas), Testcontainers, Awaitility, ArchUnit e `spring-security-test`. Sem Groovy nem Spock.
-- **Banco:** Postgres, um database por serviço, com Flyway. PostGIS e `pg_trgm` onde fizer sentido.
-- **Mensageria:** Kafka (KRaft) ou Redpanda, com Schema Registry. Eventos em Avro.
+- **Banco:** Postgres com Flyway. No compose, uma única instância (imagem com PostGIS) com um database por serviço, criados por script de init; cada serviço tem os próprios roles e não acessa o database dos outros. PostGIS e `pg_trgm` onde fizer sentido.
+- **Mensageria:** Kafka em modo KRaft (sem ZooKeeper), com Confluent Schema Registry. Eventos em Avro.
 - **Infraestrutura:**
   - Keycloak (OIDC);
   - Traefik (gateway);
@@ -80,8 +109,9 @@ Arquitetura: microsserviços que se comunicam por eventos no Kafka, rodando loca
 Estrutura do repositório:
 
 ```
+build-logic/        # convention plugins do Gradle (extraídos na etapa 3)
 libs/
-  starter/          # tenant, RLS, outbox, consumidor idempotente, segurança
+  starter/          # tenant, RLS, outbox, consumidor idempotente, segurança (extraído na etapa 3)
   eventos-schemas/  # schemas Avro + classes geradas
 servicos/
   imoveis/  pessoas/  contratos/  financeiro/  ...
@@ -108,6 +138,25 @@ docs/
 
 ---
 
+## Princípios
+
+- **Cada serviço é dono dos seus dados.** Nenhum serviço lê o banco de outro; quem precisa de um dado mantém uma cópia local alimentada por eventos.
+- **Eventos são o contrato.** Os schemas são versionados e compatíveis com a versão anterior, e o build verifica isso.
+- **Segurança por padrão.** O isolamento entre imobiliárias é garantido no banco, não só no código, e todo serviço valida o token.
+- **Regra de negócio no domínio.** Os handlers só orquestram, e cada regra vive em um único serviço e em um único lugar.
+- **Dinheiro com precisão.** Nada de `double`, arredondamento só no valor final, competência separada da data de pagamento.
+- **Dados pessoais protegidos.** Documentos e contas bancárias cifrados, o mínimo de dados pessoais nos eventos e anonimização conforme a LGPD.
+- **Testes com dependências reais.** Postgres e Kafka de verdade via Testcontainers, sem H2.
+
+### Forma de trabalho
+
+- **Incremental:** cada dependência e cada abstração entram quando a necessidade aparece, não antes.
+- **Extrair quando repetir:** o código compartilhado (starter interno e convention plugins) nasce dentro do primeiro serviço e é extraído quando o segundo precisar.
+- **Uma linguagem até o fluxo funcionar:** tudo em Java. Outra tecnologia só depois do marco.
+- **Decisões registradas:** toda mudança de decisão é atualizada neste arquivo.
+
+---
+
 ## Convenções transversais
 
 ### Multi-tenant
@@ -115,8 +164,11 @@ docs/
 - **Coluna `tenant_id` em todas as tabelas,** com duas barreiras:
   - `@TenantId` do Hibernate na aplicação;
   - Row Level Security no Postgres.
-- **Contexto da transação:** no início de cada transação, executar `SELECT set_config('app.tenant_id', ?, true)`. O starter cuida disso.
-- **Usuários do banco:** a aplicação conecta com um role comum, que não seja superuser nem tenha `BYPASSRLS`. O Flyway usa outro usuário (`spring.flyway.user`). As tabelas usam `FORCE ROW LEVEL SECURITY`.
+- **Contexto da transação:** no início de cada transação, executar `SELECT set_config('app.tenant_id', ?, true)`. O starter cuida disso. Consequência: toda leitura, inclusive com `JdbcClient`, precisa rodar dentro de uma transação (`@Transactional(readOnly = true)`); fora dela o tenant não está definido.
+- **Usuários do banco:** dois roles por serviço, nenhum deles superuser nem com `BYPASSRLS`:
+  - o dono das tabelas, usado só pelo Flyway (`spring.flyway.user`);
+  - o da aplicação, só com permissão de leitura e escrita de dados.
+- **`FORCE ROW LEVEL SECURITY`** em todas as tabelas. Superuser e roles com `BYPASSRLS` sempre ignoram o RLS, e o `FORCE` só tem efeito sobre o dono da tabela. Como o dono também fica sob RLS, o DDL das migrações funciona normalmente, mas uma migração de dados precisa definir o tenant explicitamente.
 - **Unicidade:** sempre por tenant, por exemplo `UNIQUE (tenant_id, codigo)`. Não existe entidade global entre tenants.
 
 ### Autenticação e autorização
@@ -127,8 +179,9 @@ docs/
   - equipe da imobiliária: `admin`, `gerente`, `corretor`, `financeiro`, `atendente`;
   - portal do cliente: `inquilino`, `proprietario`, em um client separado.
 - **BFF:** fluxo Authorization Code com PKCE. Os tokens ficam no Redis; o navegador recebe só o cookie `__Host-sid` (`HttpOnly`, `Secure`, `SameSite=Lax`). O BFF guarda o tenant ativo e envia `X-Tenant-Id` em cada chamada aos serviços.
-- **Cada serviço valida o JWT** (assinatura, `iss`, `aud`, `exp`) e só aceita o `X-Tenant-Id` se o tenant estiver no claim `tenants`.
+- **Cada serviço valida o JWT** (assinatura, `iss`, `aud`, `exp`) e só aceita o `X-Tenant-Id` se o tenant estiver no claim `tenants`. Os papéis valem só para o tenant ativo: quem é `admin` em um tenant e `corretor` em outro tem, em cada chamada, apenas os papéis do tenant do `X-Tenant-Id`.
 - **Chamadas entre serviços:** token de client credentials, com papel `servico`.
+- **Desenvolvimento antes do BFF:** um client público, só de desenvolvimento, com Authorization Code + PKCE, usado a partir de um cliente HTTP (Bruno, Postman ou Insomnia). O token dele também precisa da audiência `imob-api`. O realm importado traz dois tenants fixos e usuários por papel, incluindo um usuário em dois tenants com papéis diferentes. Até a etapa 11, os tenants existem só por esse import e por carga inicial.
 - **Armadilha do Docker:** o `iss` do token é a URL pública do Keycloak. Configure `KC_HOSTNAME` com a URL pública e `KC_HOSTNAME_BACKCHANNEL_DYNAMIC=true`. Nos serviços, use `jwk-set-uri` com o endereço interno e valide o issuer explicitamente com a URL pública.
 - **Webhooks de banco** não passam pelo Keycloak: a autenticação é por HMAC, mTLS ou lista de IPs, conforme o banco. O tenant vem da URL.
 
@@ -165,26 +218,36 @@ docs/
 - **Concorrência:** locking otimista em dois níveis. Comparação explícita da versão enviada pelo cliente (gera o 412) e `@Version` do JPA (pega a corrida entre leitura e escrita).
 - **Operações longas** (relatórios pesados): `202` com `jobId`.
 
-### Organização do código: vertical slice
+### Organização do código: package by feature + vertical slice
 
 ```
 servicos/imoveis/
-  cadastrarimovel/       # endpoint + request/response (records) + handler
-  definirproprietarios/
-  publicaroferta/
-  buscarimoveis/         # leitura direta com JdbcClient
-  contratoativado/       # listener Kafka também é uma fatia
-  dominio/               # agregados e regras compartilhadas
-  infra/                 # outbox, segurança, config, adaptadores externos
+  imovel/                  # área de negócio (package by feature)
+    Imovel.java            # agregado e entidade JPA, com as regras da área (público)
+    ImovelRepository.java  # Spring Data: estende JpaRepository (público)
+    cadastrar/             # fatia: endpoint + request/response (records) + handler
+    inativar/
+    definirproprietarios/
+    contratoativado/       # listener Kafka também é uma fatia
+  oferta/
+    Oferta.java
+    OfertaRepository.java
+    publicar/
+    alterarpreco/
+  busca/
+    buscarimoveis/         # leitura direta com JdbcClient
+  infra/                   # outbox, segurança, config, adaptadores externos
 ```
 
-- **Uma pasta por caso de uso,** com tudo que ele precisa. As classes são package-private.
+- **Uma pasta por área de negócio** (package by feature) e, dentro dela, **uma subpasta por caso de uso** (vertical slice), com tudo que ele precisa.
+- **Visibilidade:** as classes da fatia são package-private. O agregado, as regras e o repositório da área ficam na raiz da área e são públicos, porque em Java um subpacote não enxerga o package-private do pacote pai. Em `infra/`, só é público o que as fatias usam.
 - **Regra de negócio fica no domínio.** O handler só orquestra: carrega, chama o agregado, salva, publica.
-- **Fatias não chamam umas às outras.** Algo comum vai para `dominio/` (se for regra) ou `infra/` (se for técnico).
+- **Fatias não chamam umas às outras.** Algo comum vai para a raiz da área (se for regra) ou para `infra/` (se for técnico).
 - **Acesso a dados:**
-  - escrita com regra passa pelo agregado;
+  - escrita com regra passa pelo agregado, carregado e salvo pelo repositório Spring Data da área;
   - leitura pode ir direto ao banco, e quem protege é o RLS, já que o `@TenantId` não atua em SQL puro.
-- **Domínio puro,** sem Spring nem JPA. Value objects e eventos são records; estados e comandos são sealed interfaces.
+- **O agregado é a entidade JPA.** As anotações de JPA e Hibernate (`@Entity`, `@TenantId`, `@Version`, `@Embeddable`) ficam no próprio agregado, sem modelo de persistência separado. Componentes Spring (`@Component`, `@Service`, injeção de dependência) não entram em agregados nem em value objects: quem os cria é o Hibernate ou um `new`, não o Spring.
+- **Tipos:** value objects e eventos são records (um value object persistido vira `@Embeddable`); estados e comandos são sealed interfaces.
 - **Portas e adaptadores (hexagonal) só onde há várias implementações reais:**
   - gateway bancário (API REST, CNAB 240, CNAB 400);
   - provedor de assinatura eletrônica;
@@ -193,18 +256,43 @@ servicos/imoveis/
   - consulta de CEP.
 - **Evento de domínio ≠ evento de integração.** O mapeamento para Avro fica na infra.
 
+### Padrões de projeto
+
+Um padrão entra quando resolve um problema real do projeto, não por antecipação. A tabela mostra onde eles provavelmente vão aparecer; confirme cada um quando o problema surgir.
+
+| Padrão | Onde provavelmente aparece | Etapa |
+|---|---|---|
+| Aggregate, Value Object e Repository (DDD tático) | `Imovel`, `Oferta`, `Endereco`; repositórios Spring Data | 2 |
+| Factory Method (método de fábrica estático) | criação de agregados que já nascem válidos | 2 |
+| Transactional Outbox | evento gravado na mesma transação do dado | 2 |
+| Test Data Builder | montagem de dados nos testes (`umImovel()...build()`) | a partir da 2 |
+| Idempotent Consumer | consumidores Kafka | 3 |
+| Anti-Corruption Layer | tradução de eventos de outros serviços para o modelo local; Bancário normalizando tudo em `PagamentoRecebido` | 3 e 6 |
+| Command e State | comandos do contrato (`sealed interface Comando`) e máquina de estados. Este arquivo já escolheu função pura com sealed interface; vale comparar com o State clássico do GoF | 4 |
+| Specification | condições de cada transição do contrato, combináveis entre si | 4 |
+| Saga coreografada | encerramento, acerto final e repasse, passando por vários serviços | 4 a 7 |
+| Strategy | multa e juros, índice de reajuste, canal de notificação | 4, 5 e 9 |
+| Adapter + Strategy | `GatewayBancario` (API, CNAB 240, CNAB 400) escolhido por tenant; fonte de índices | 6 e 8 |
+| Template Method | estrutura comum de leitura e geração dos arquivos CNAB 240 e 400 | 6 |
+| CQRS e projeções | Relatórios | 10 |
+| BFF e API Composition | agregação de dados para o front | 11 |
+
 ### Testes
 
 - **Domínio:** testes unitários puros, com `@ParameterizedTest` (com `name` legível) e `@CsvSource`/`@MethodSource`. Montar dados com Test Data Builders (`umImovel()...build()`). É onde fica a maior parte dos testes.
 - **Fatia:** um teste de integração por caso de uso: MockMvc, Postgres via Testcontainers e verificação do evento no outbox. Usar `@Nested` para agrupar os cenários.
 - **Persistência:** sempre Postgres real, nunca H2. Teste obrigatório: o RLS impede leitura entre tenants, verificado com `JdbcTemplate` (que ignora o filtro do Hibernate).
+- **Usuário nos testes:** os testes conectam com o role da aplicação, não com o usuário padrão do container do Testcontainers, que é superuser e ignora o RLS. Com ele, os testes passariam sem exercitar o isolamento entre tenants.
 - **Web e segurança:** `jwt()` do `spring-security-test`, com a configuração de segurança importada. Cobrir 401, 403 (tenant fora do token, papel sem permissão), 412 e 422.
 - **Kafka:** Testcontainers com Awaitility, e `schema.registry.url=mock://teste`. Testar:
   - produção com o header `tenantId`;
   - idempotência (evento duplicado);
   - eventos fora de ordem.
-- **Dublês:** fakes em memória para repositório e publicador de eventos; Mockito só para bordas externas, com `@MockitoBean`.
-- **ArchUnit:** o domínio não depende de `org.springframework..` nem de `jakarta.persistence..`.
+- **Dublês:**
+  - sem fake de repositório: os handlers são cobertos pelo teste de integração da fatia, com banco real;
+  - fake em memória para o publicador de eventos;
+  - Mockito só para bordas externas, com `@MockitoBean`.
+- **ArchUnit:** agregados e value objects (classes na raiz de cada área, exceto as interfaces de repositório) não dependem de `org.springframework..`; uma fatia não depende de outra fatia.
 - **Containers compartilhados:** declarados uma vez, como `static`, com `@ServiceConnection`.
 
 ---
@@ -238,7 +326,7 @@ servicos/imoveis/
   - unicidade por `(tenant_id, documento_hash)`;
   - documento mascarado na interface; ver o completo exige permissão e gera auditoria.
 - **Eventos sem dado pessoal crítico:** `pessoas.v1` é compactado e leva só id, tipo, nome, contatos e versão.
-- **Anonimização (LGPD, art. 18, VI):**
+- **Anonimização a pedido do titular (LGPD, art. 18):** o inciso IV cobre anonimização de dados desnecessários, excessivos ou tratados em desconformidade; o inciso VI, eliminação de dados tratados com consentimento. O inciso aplicável depende da base legal de cada dado.
   - recusada se houver vínculo ativo;
   - bloqueio de uso se houver obrigação legal de guarda (art. 16, I);
   - senão, apaga os dados, publica `PessoaAnonimizada` e um tombstone no tópico.
@@ -256,17 +344,17 @@ servicos/imoveis/
   - Reajuste, aditivo e prorrogação não mudam o estado ATIVO.
 - **Implementação:** função pura no agregado, recebendo `sealed interface Comando` e devolvendo os eventos. Sem Spring Statemachine. Toda transição é registrada em `historico_status`.
 - **Condições de cada transição:**
-  - para EM_ANALISE: partes completas, exatamente uma garantia, cônjuge do fiador incluído, percentuais somando 100, valores positivos, reajuste no mínimo anual;
+  - para EM_ANALISE: partes completas, exatamente uma garantia (decisão do projeto, mais restrita que a lei), cônjuge do fiador incluído, percentuais somando 100, valores positivos, reajuste no mínimo anual;
   - para AGUARDANDO_ASSINATURA: garantia aprovada, PDF gerado, hash do conteúdo gravado;
   - para ASSINADO: webhook de todas as assinaturas;
   - para ATIVO: job diário na data de início da vigência;
   - para ENCERRADO: vistoria feita, chaves devolvidas, `AcertoQuitado` recebido.
 - **Invariantes legais** (confirmar na lei ao implementar):
-  - uma única modalidade de garantia por contrato (Lei 8.245/91, art. 37, parágrafo único);
-  - caução em dinheiro de no máximo 3 aluguéis (art. 38, §2º);
+  - no máximo uma modalidade de garantia por contrato (Lei 8.245/91, art. 37, parágrafo único). A locação sem garantia é permitida (art. 42), então exigir exatamente uma é decisão do projeto;
+  - caução em dinheiro de no máximo 3 aluguéis, depositada em caderneta de poupança, com os rendimentos revertidos ao locatário na devolução (art. 38, §2º);
   - multa rescisória proporcional ao tempo restante (art. 4º), dispensada em transferência pelo empregador com aviso de 30 dias;
   - prazo de 30 meses ou mais no residencial (art. 46) versus menos de 30 meses (art. 47);
-  - aviso de 30 dias no prazo indeterminado (art. 6º);
+  - no prazo indeterminado, o locatário avisa com 30 dias (art. 6º). Do lado do locador: no contrato de 30 meses ou mais que foi prorrogado, denúncia com 30 dias para desocupação (art. 46, §2º); no de menos de 30 meses, retomada só nas hipóteses do art. 47;
   - taxas de administração e intermediação são do locador (art. 22, VII);
   - reajuste com periodicidade mínima anual (Lei 10.192/2001, art. 2º, §1º).
 - **Condições versionadas:** a tabela `condicoes_contrato` tem `versao` e `vigente_desde`, com origem ORIGINAL, REAJUSTE ou ADITIVO. Nada é alterado no lugar.
@@ -280,7 +368,7 @@ servicos/imoveis/
 
 - **Parcelas em janela móvel** (próximos meses), nunca o contrato inteiro de uma vez.
 - **Multa e juros** parametrizados por contrato; tratar pagamento parcial e pagamento a maior.
-- **Acerto final** a partir de `EncerramentoIniciado`; devolução da caução.
+- **Acerto final** a partir de `EncerramentoIniciado`; devolução da caução com os rendimentos da poupança.
 
 ### Bancário
 
@@ -308,6 +396,57 @@ servicos/imoveis/
 
 ---
 
+## Decisões em aberto
+
+Itens que ainda precisam de decisão, agrupados pela etapa em que passam a bloquear o trabalho. Ao decidir, mova o item para a seção correspondente deste arquivo.
+
+### Etapa 2: Imóveis
+
+- **Tipo dos ids:** `tenant_id` e ids dos agregados (UUID? qual versão?). Afeta o cast na policy do RLS e os schemas Avro.
+- **O que é compartilhado entre áreas do mesmo serviço** (ex.: o value object `Endereco`, ou `Oferta` precisando de dados do `Imovel`): referência só por id, pacote comum na raiz do serviço, ou uma área usar o agregado público da outra.
+- **Fake do publicador de eventos:** com o outbox, o handler grava o evento numa tabela, na mesma transação. Avaliar se o fake ainda faz sentido ao projetar o outbox.
+- **Outbox e jobs × RLS:** o publicador e os jobs atravessam tenants, e o role da aplicação não tem `BYPASSRLS`. Opções: role separado com `BYPASSRLS`, outbox fora do RLS, ou execução por tenant (exige a lista de tenants em cada serviço).
+- **Envelope do evento:** campo com o tipo do evento; se `versao` é a versão do agregado; um evento de integração por transação (dois eventos do mesmo comando com a mesma versão fariam o consumidor descartar o segundo); eventos sem agregado, como `PagamentoRecebido`.
+- **Vários tipos de evento por tópico:** a estratégia padrão do Schema Registry (`TopicNameStrategy`) aceita um schema por tópico. Opções: `RecordNameStrategy`, `TopicRecordNameStrategy`, union ou envelope por agregado.
+- **Modo de compatibilidade:** "compatível com a versão anterior" equivale a `BACKWARD` não transitivo. O replay de tópicos com retenção infinita pede um modo transitivo (`FULL_TRANSITIVE` cobre consumidores novos e antigos). Definir também como o build verifica.
+- **Local dos schemas Avro:** dentro de Imóveis até a etapa 3 ou já em `libs/eventos-schemas`.
+- **Representação de dinheiro:** centavos em `long` ou `BigDecimal`, com o tipo correspondente no Postgres e no Avro (o preço da oferta já precisa disso).
+- **Escala dos percentuais:** com quantas casas o percentual de posse soma "exatamente 100" (ex.: 33,33 + 33,33 + 33,34).
+- **Datas e fuso:** tipo de `ocorridoEm` (`Instant` em UTC?), da competência (`YearMonth`?) e fuso dos jobs (`America/Sao_Paulo`?).
+- **Status HTTP restantes:** erro de formato ou validação (400?), conflito pego pelo `@Version` (409 ou 412?) e requisição sem `If-Match` (428 ou aceitar?).
+
+### Etapa 3: Pessoas
+
+- **Critério de idempotência:** tabela de eventos processados × upsert por versão. Sugestão: upsert para projeções de estado; tabela para consumidores com efeito colateral.
+- **DLQ por tópico ou por (tópico, consumidor):** com dois consumidores no mesmo tópico, uma DLQ compartilhada não indica quem falhou, e o reprocessamento entregaria a mensagem aos dois.
+- **Índice cego:** normalização antes do HMAC (pontuação, maiúsculas no CNPJ alfanumérico) e chave por tenant ou global (a global permite correlacionar a mesma pessoa entre tenants).
+
+### Etapa 4: Contratos
+
+- **Estados como sealed interface × entidade JPA:** um estado modelado como sealed interface não vira coluna diretamente. Opções: enum simples, ou sealed interface persistida por um conversor.
+- **Token de serviço × `X-Tenant-Id`:** o token de client credentials não tem o claim `tenants`; definir como o tenant é aceito nessas chamadas.
+- **LGPD × snapshots e retenção infinita:** nomes das partes ficam nos snapshots de Contratos e em tópicos sem expiração, fora do alcance da anonimização. Opções: eventos só com ids, crypto-shredding, ou guarda justificada pelo art. 16, I.
+- **Encerramento com dívida:** o que acontece se `AcertoQuitado` nunca chegar; quando o imóvel volta a VAGO (na entrega das chaves ou no ENCERRADO).
+- **Ativação e cancelamento:** contrato assinado depois da data de início da vigência; se ASSINADO → CANCELADO é permitido ou exige distrato.
+- **Locação não residencial** (ação renovatória, art. 51): dentro ou fora do escopo.
+- **Reajuste:** qual janela de 12 meses (o índice é publicado com defasagem) e se o acumulado vem do produto das taxas mensais ou do número-índice (podem divergir na última casa).
+
+### Etapas 5 a 7: Financeiro, Bancário e Repasses
+
+- **Arredondamento:** modo (`HALF_EVEN` ou `HALF_UP`) e quem fica com o centavo que sobra no rateio do repasse.
+- **Vencimento** em fim de semana ou feriado; tamanho da janela móvel de parcelas.
+
+### Etapa 10: Relatórios
+
+- **DIMOB e informe de rendimentos × eventos sem documento:** Relatórios precisa de CPF/CNPJ, que os eventos não trazem. Opções: consulta interna a Pessoas (ampliando a exceção às chamadas síncronas) ou geração em outro serviço.
+
+### Etapa 11: Tenants e BFF
+
+- **Cadastro de tenants × "não existe entidade global":** a tabela de tenants é uma exceção ou também fica sob RLS.
+- **Portal do cliente:** como o usuário do Keycloak se liga à `Pessoa`, e se o client separado implica outro BFF.
+
+---
+
 ## Glossário
 
 - **Repasse:** valor transferido ao proprietário depois de descontada a taxa de administração.
@@ -322,20 +461,21 @@ servicos/imoveis/
 
 ## Ordem de implementação e status
 
-- [ ] 0. Infraestrutura: Docker Compose (Postgres, Kafka/Redpanda, Schema Registry, Kafka UI, Keycloak com realm importado, Traefik), starter e schemas.
-- [ ] 1. Imóveis
-- [ ] 2. Pessoas: primeiro consumidor de eventos de outro serviço.
-- [ ] 3. Contratos
-- [ ] 4. Financeiro e banco fake
-- [ ] 5. Bancário
-- [ ] 6. Repasses
-- [ ] 7. Índices
-- [ ] 8. Documentos e Notificações
-- [ ] 9. Relatórios
-- [ ] 10. Tenants e BFF completos
-- [ ] Opcional: reescrever um serviço já pronto em outra linguagem, sem alterar os demais, para provar que os contratos de eventos estão desacoplados.
+- [ ] 1. Infraestrutura: Docker Compose com Postgres (PostGIS, um database por serviço), Kafka (KRaft), Confluent Schema Registry, Kafka UI, Keycloak (realm importado com dois tenants e client de desenvolvimento) e Traefik.
+- [ ] 2. Imóveis: primeiro serviço, com RLS, validação de token e outbox. Pronto quando um imóvel criado gera o evento no Kafka, com o tenant no header.
+- [ ] 3. Pessoas: primeiro consumidor de eventos de outro serviço. Aqui o starter interno e os convention plugins são extraídos.
+- [ ] 4. Contratos: máquina de estados e regras da Lei do Inquilinato.
+- [ ] 5. Financeiro e banco fake
+- [ ] 6. Bancário: adaptadores de API e de CNAB.
+- [ ] 7. Repasses
+- [ ] 8. Índices
+- [ ] 9. Documentos e Notificações
+- [ ] 10. Relatórios
+- [ ] 11. Tenants e BFF completos
+- [ ] Opcional, depois do marco: reescrever um serviço já pronto em outra linguagem, sem alterar os demais, para provar que os contratos de eventos estão desacoplados.
 
-**Etapa atual:** 0. Infraestrutura
+**Etapa atual:** 1. Infraestrutura
 
 **Notas da etapa:**
 <!-- atualize aqui o que está em andamento e as dúvidas abertas -->
+- O esqueleto de `servicos/imoveis` (Spring Boot gerado pelo Initializr) já existe.
