@@ -8,6 +8,7 @@ services:
       POSTGRES_PASSWORD: ${DB_PASSWORD}
       DB_PASSWORD_IMOVEIS_DONO: ${DB_PASSWORD_IMOVEIS_DONO}
       DB_PASSWORD_IMOVEIS_APP: ${DB_PASSWORD_IMOVEIS_APP}
+      POSTGRES_INITDB_ARGS: '--locale-provider=icu --icu-locale=pt-BR'
     ports:
       - "5432:5432"
     volumes:
