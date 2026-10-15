@@ -37,6 +37,7 @@ Se eu escrever **"pode escrever o código"**, você pode escrever o código daqu
 - Responda em português do Brasil, de forma direta e com exemplos concretos.
 - Precisão acima de tudo. Se não tiver certeza sobre uma API, versão ou regra legal, diga isso e indique onde confirmar. Não invente.
 - Se algo que eu fizer contrariar uma decisão deste arquivo, aponte. Se eu quiser mudar a decisão, sugira que eu atualize este arquivo.
+- Este arquivo não é definitivo. Se uma decisão puder ser melhorada ou faltar algo que valha a pena, proponha a mudança e explique o ganho. Ela só vale depois que eu aceitar e ela for registrada aqui.
 - Se uma tarefa depender de um item de **Decisões em aberto**, pergunte antes de assumir uma opção. Depois que eu decidir, proponha a atualização deste arquivo.
 - Respeite o modo incremental: não sugira dependência nem abstração antes de a necessidade aparecer. Quando algo se repetir entre serviços, aponte que é hora de extrair.
 - **Padrões de projeto:** quando um problema do projeto pedir um padrão, aponte qual, por que ele cabe e como ficaria sem ele, para eu comparar. Ao revisar, nomeie os padrões presentes no código e aponte os que estiverem forçados. Use a seção **Padrões de projeto** como mapa, não como lista obrigatória.
@@ -96,7 +97,7 @@ Priorize explicações e revisões ligadas a estes temas:
 
 - **Linguagem e build:** Java 21+ (LTS) com Spring Boot 4. Hoje o build usa Java 25 e Spring Boot 4.1.1. Gradle multi-módulo, em monorepo, com a configuração comum em convention plugins.
 - **Testes:** JUnit 5, AssertJ, Mockito (só nas bordas), Testcontainers, Awaitility, ArchUnit e `spring-security-test`. Sem Groovy nem Spock.
-- **Banco:** Postgres com Flyway. No compose, uma única instância (imagem com PostGIS) com um database por serviço, criados por script de init; cada serviço tem os próprios roles e não acessa o database dos outros. PostGIS e `pg_trgm` onde fizer sentido.
+- **Banco:** Postgres com Flyway. No compose, uma única instância (imagem com PostGIS) com um database por serviço, criados por script de init; cada serviço tem os próprios roles e não acessa o database dos outros. PostGIS e `pg_trgm` onde fizer sentido. Ordenação de texto pelo ICU, com locale `pt-BR`, definida para o servidor inteiro no `initdb` (`POSTGRES_INITDB_ARGS`): a imagem é Alpine, e a biblioteca C dela (musl) não ordena por idioma.
 - **Mensageria:** Kafka em modo KRaft (sem ZooKeeper), com Confluent Schema Registry. Eventos em Avro.
 - **Infraestrutura:**
   - Keycloak (OIDC);
@@ -154,6 +155,7 @@ docs/
 - **Extrair quando repetir:** o código compartilhado (starter interno e convention plugins) nasce dentro do primeiro serviço e é extraído quando o segundo precisar.
 - **Uma linguagem até o fluxo funcionar:** tudo em Java. Outra tecnologia só depois do marco.
 - **Decisões registradas:** toda mudança de decisão é atualizada neste arquivo.
+- **Revisão de fechamento de etapa:** ao concluir uma etapa, conferir se o implementado bate com as decisões deste arquivo e registrar as lacunas descobertas. Depois, revisar as regras de negócio (e as leis citadas) dos serviços da próxima etapa, atualizar **Decisões em aberto** e decidir antes de começar o que bloqueia as primeiras tarefas.
 
 ---
 
@@ -190,6 +192,7 @@ docs/
 - **Tópicos:** `<servico>.v1` (ex.: `imoveis.v1`).
   - A chave da mensagem é o id do agregado, o que garante ordem por agregado.
   - O header `tenantId` vai em toda mensagem.
+- **Criação automática de tópicos:** ligada no broker (`auto.create.topics.enable=true`), por praticidade no desenvolvimento, já que é um projeto de estudo. Tópicos com configuração especial (compactação, retenção infinita) precisam ser criados explicitamente antes do primeiro uso, senão nascem com o padrão do broker.
 - **Formato:** *event-carried state transfer*. O evento leva o snapshot completo do agregado, mais `eventoId`, `versao` e `ocorridoEm`.
 - **Outbox próprio,** implementado no starter: uma tabela mais um publicador agendado.
 - **Consumidores idempotentes:** uma tabela de eventos processados, ou upsert condicionado à versão (`WHERE versao < EXCLUDED.versao`).
@@ -400,10 +403,6 @@ Um padrão entra quando resolve um problema real do projeto, não por antecipaç
 
 Itens que ainda precisam de decisão, agrupados pela etapa em que passam a bloquear o trabalho. Ao decidir, mova o item para a seção correspondente deste arquivo.
 
-### Etapa 1: Infraestrutura base
-
-- **Criação automática de tópicos:** ligada ou desligada no broker. Desligada evita que um erro de digitação crie um tópico silenciosamente, mas exige criar os tópicos de forma explícita.
-
 ### Etapa 2: Imóveis
 
 - **Tipo dos ids:** `tenant_id` e ids dos agregados (UUID? qual versão?). Afeta o cast na policy do RLS e os schemas Avro.
@@ -418,6 +417,7 @@ Itens que ainda precisam de decisão, agrupados pela etapa em que passam a bloqu
 - **Escala dos percentuais:** com quantas casas o percentual de posse soma "exatamente 100" (ex.: 33,33 + 33,33 + 33,34).
 - **Datas e fuso:** tipo de `ocorridoEm` (`Instant` em UTC?), da competência (`YearMonth`?) e fuso dos jobs (`America/Sao_Paulo`?).
 - **Status HTTP restantes:** erro de formato ou validação (400?), conflito pego pelo `@Version` (409 ou 412?) e requisição sem `If-Match` (428 ou aceitar?).
+- **Mídia do imóvel e MinIO:** a mídia (URL pré-assinada, confirmação e miniaturas assíncronas) está decidida em Imóveis, mas a etapa 2 não a inclui, e o MinIO só aparece com Documentos, na etapa 10. Definir se a mídia entra na etapa 2, numa etapa própria ou depois do marco (ela não faz parte do fluxo do marco).
 
 ### Etapa 3: Identidade
 
@@ -429,6 +429,7 @@ Itens que ainda precisam de decisão, agrupados pela etapa em que passam a bloqu
 - **Critério de idempotência:** tabela de eventos processados × upsert por versão. Sugestão: upsert para projeções de estado; tabela para consumidores com efeito colateral.
 - **DLQ por tópico ou por (tópico, consumidor):** com dois consumidores no mesmo tópico, uma DLQ compartilhada não indica quem falhou, e o reprocessamento entregaria a mensagem aos dois.
 - **Índice cego:** normalização antes do HMAC (pontuação, maiúsculas no CNPJ alfanumérico) e chave por tenant ou global (a global permite correlacionar a mesma pessoa entre tenants).
+- **Entrada da observabilidade:** OpenTelemetry, Grafana, Tempo e Loki estão na stack, mas em nenhuma etapa. Sugestão: na etapa 4, com o primeiro fluxo entre dois serviços, antes das sagas das etapas 5 a 8. O outbox quebra a propagação do trace (o evento é publicado depois, por outro processo): o contexto precisa ser gravado na linha do outbox e repassado nos headers do Kafka.
 
 ### Etapa 5: Contratos
 
@@ -439,6 +440,20 @@ Itens que ainda precisam de decisão, agrupados pela etapa em que passam a bloqu
 - **Ativação e cancelamento:** contrato assinado depois da data de início da vigência; se ASSINADO → CANCELADO é permitido ou exige distrato.
 - **Locação não residencial** (ação renovatória, art. 51): dentro ou fora do escopo.
 - **Reajuste:** qual janela de 12 meses (o índice é publicado com defasagem) e se o acumulado vem do produto das taxas mensais ou do número-índice (podem divergir na última casa).
+
+### Venda (etapa 5 ou depois do marco)
+
+- **Etapa da venda:** o marco cobre só a locação, e a ordem de implementação não tem item para a venda. Definir se ela entra na etapa 5 ou depois do marco.
+- **Onde fica o direito de preferência:** a regra está em Imóveis, que só conhece a `ocupacao`, não o inquilino. Contratos tem a locação ativa e a proposta de venda, o que deixaria a regra num único serviço. A modelar: conteúdo da notificação (preço, forma de pagamento, ônus reais, local e horário para exame dos documentos; Lei 8.245/91, art. 27), casos excluídos (permuta, doação, decisão judicial e outros; art. 32) e prioridade do condômino sobre o inquilino (art. 34).
+- **Locação ativa após a venda:** o comprador pode denunciar a locação com 90 dias para desocupação, salvo contrato por prazo determinado com cláusula de vigência em caso de alienação, averbado na matrícula (Lei 8.245/91, art. 8º). Definir se Contratos reage a `VendaConcluida`, quem passa a ser o locador com os snapshots congelados e a partir de qual competência o Repasses paga o novo proprietário.
+- **Significado de `CONCLUIDO`:** a propriedade só se transfere com o registro do título no Registro de Imóveis (Código Civil, art. 1.245), e a escritura pública é obrigatória acima de 30 salários mínimos (art. 108). Definir se `ASSINADO` é o compromisso de compra e venda e `CONCLUIDO` é o registro.
+- **Dinheiro da venda:** o Financeiro só trata aluguel. Opções: controlar só a comissão (o comprador paga direto ao vendedor ou por financiamento) ou controlar também o sinal (arras, Código Civil, arts. 417 a 420) e as parcelas.
+- **Comissão:** é devida quando o resultado é obtido, mesmo que o negócio não se efetive por arrependimento das partes (Código Civil, art. 725), o que afeta o DISTRATADO. Definir quem paga e a divisão entre o corretor que captou e o que vendeu.
+- **Venda parcial e vários compradores:** se um coproprietário pode vender só a sua parte (os outros condôminos têm preferência na coisa indivisível, Código Civil, art. 504) e como a proposta leva os percentuais dos compradores, que também somam 100.
+- **Dois caminhos escrevem os proprietários:** o `PUT` do usuário e o `VendaConcluida` substituem a mesma lista. Definir se o `PUT` continua permitido com venda em andamento e o que fazer se a lista mudar entre a conclusão da venda e a chegada do evento.
+- **Outorga do cônjuge do vendedor:** proprietário casado precisa da autorização do cônjuge para vender, salvo na separação absoluta (Código Civil, art. 1.647, I). O modelo de cônjuge criado para o fiador pode ser reaproveitado.
+- **DIMOB:** confirmar na instrução normativa da Receita se a intermediação de compra e venda entra na declaração; se entrar, Relatórios precisa dos dados da venda.
+- **Ofertas de locação e venda ao mesmo tempo:** o índice único por modalidade permite as duas, mas não define como uma afeta a outra: o que acontece com a oferta de locação quando a proposta de venda é aceita ou a venda é concluída, e com a oferta de venda quando a locação é fechada (o comprador passa a herdar o inquilino). Falta também a condição do índice parcial (quais status contam) e quando uma oferta fica RESERVADA.
 
 ### Etapas 6 a 8: Financeiro, Bancário e Repasses
 
