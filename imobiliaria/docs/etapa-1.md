@@ -11,7 +11,7 @@ Docker Compose com Postgres (PostGIS, um database por serviço), Kafka (KRaft), 
 
 ## Decisão pendente
 
-- [ ] **Criação automática de tópicos** (antes da T3): ligada ou desligada no broker. Recomendação: desligada, para um erro de digitação não criar um tópico silenciosamente.
+- [x] **Criação automática de tópicos** (antes da T3): ligada ou desligada no broker. Recomendação: desligada, para um erro de digitação não criar um tópico silenciosamente. **Decidido: ligada**, por praticidade no desenvolvimento. Registrado no `CLAUDE.md`, seção **Mensageria**.
 
 ## Ordem
 
@@ -23,11 +23,11 @@ As trilhas Postgres (T1 → T2) e Kafka (T3 → T4 → T5) são independentes. A
 
 **Critérios de aceite**
 
-- [ ] O compose fica em `infra/`.
-- [ ] A imagem tem tag fixa (nada de `latest`).
-- [ ] A senha do superuser vem de um `.env`.
-- [ ] Existe um healthcheck, e o container fica `healthy`.
-- [ ] Um volume nomeado preserva os dados entre `down` e `up`.
+- [x] O compose fica em `infra/`.
+- [x] A imagem tem tag fixa (nada de `latest`).
+- [x] A senha do superuser vem de um `.env`.
+- [x] Existe um healthcheck, e o container fica `healthy`.
+- [x] Um volume nomeado preserva os dados entre `down` e `up`.
 
 **Pontos de atenção**
 
@@ -46,14 +46,14 @@ As trilhas Postgres (T1 → T2) e Kafka (T3 → T4 → T5) são independentes. A
 
 **Critérios de aceite**
 
-- [ ] Existe o database `imoveis`.
-- [ ] Existem dois roles do serviço: o dono (usado só pelo Flyway) e o da aplicação.
-- [ ] `SELECT rolname, rolsuper, rolbypassrls FROM pg_roles` mostra os dois com `false` nas duas colunas.
-- [ ] O dono é dono do database.
-- [ ] Uma tabela criada pelo dono pode ser lida e escrita pelo role da aplicação, sem `GRANT` manual. Teste com uma tabela temporária e apague depois.
-- [ ] O role da aplicação **não** consegue criar tabelas.
-- [ ] `CONNECT` foi revogado de `PUBLIC` no database `imoveis`.
-- [ ] As extensões `postgis` e `pg_trgm` estão criadas em `imoveis`.
+- [x] Existe o database `imoveis`.
+- [x] Existem dois roles do serviço: o dono (usado só pelo Flyway) e o da aplicação.
+- [x] `SELECT rolname, rolsuper, rolbypassrls FROM pg_roles` mostra os dois com `false` nas duas colunas.
+- [x] O dono é dono do database.
+- [x] Uma tabela criada pelo dono pode ser lida e escrita pelo role da aplicação, sem `GRANT` manual. Teste com uma tabela temporária e apague depois.
+- [x] O role da aplicação **não** consegue criar tabelas.
+- [x] `CONNECT` foi revogado de `PUBLIC` no database `imoveis`.
+- [x] As extensões `postgis` e `pg_trgm` estão criadas em `imoveis`.
 
 **Pontos de atenção**
 
@@ -146,3 +146,4 @@ As trilhas Postgres (T1 → T2) e Kafka (T3 → T4 → T5) são independentes. A
 - [ ] A definição de pronto, no início deste arquivo, funciona.
 - [ ] Existe um `docs/infra.md` com URLs, portas e credenciais de desenvolvimento.
 - [ ] O status da etapa está atualizado no `CLAUDE.md`.
+- [ ] As regras de negócio e as decisões em aberto da etapa 2 foram revisadas, e as que bloqueiam o início dela estão decididas.
