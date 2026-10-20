@@ -39,8 +39,17 @@ services:
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
       KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+    healthcheck:
+      test: [ "CMD-SHELL", "kafka-broker-api-versions --bootstrap-server kafka:9093" ]
+      timeout: 15s
+      interval: 15s
+      start_period: 40s
+      start_interval: 5s
     ports:
       - "9092:9092"
+    volumes:
+      - kafka_data:/var/lib/kafka/data
 
 volumes:
   postgres_data:
+  kafka_data:
