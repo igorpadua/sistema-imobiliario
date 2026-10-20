@@ -76,11 +76,12 @@ As trilhas Postgres (T1 → T2) e Kafka (T3 → T4 → T5) são independentes. A
 
 **Critérios de aceite**
 
-- [ ] A imagem tem tag fixa.
-- [ ] O broker fica `healthy`.
-- [ ] Um tópico de teste é criado, e você produz e consome nele de dentro da rede do compose.
-- [ ] Um consumidor **com group id** funciona.
-- [ ] Do host, `kcat -b localhost:<porta> -L` mostra o endereço anunciado acessível a partir do host. O `kcat` é opcional, mas ajuda bastante.
+- [x] A imagem tem tag fixa.
+- [x] O broker fica `healthy`.
+- [x] Um tópico de teste é criado, e você produz e consome nele de dentro da rede do compose.
+- [x] Um consumidor **com group id** funciona.
+- [x] Do host, `kcat -b localhost:<porta> -L` mostra o endereço anunciado acessível a partir do host. O `kcat` é opcional, mas ajuda bastante.
+- [x] Um volume nomeado preserva os dados entre `down` e `up`: as mensagens e os offsets dos consumer groups continuam lá.
 
 **Pontos de atenção**
 
@@ -90,7 +91,7 @@ As trilhas Postgres (T1 → T2) e Kafka (T3 → T4 → T5) são independentes. A
   - um do controller;
   - e os *advertised listeners* de cada um.
 - Num nó único, os tópicos internos precisam de fator de replicação 1 (`offsets.topic.replication.factor` e os de transação). Sem isso, consumer groups falham com "coordinator not available".
-- O modo KRaft exige um `CLUSTER_ID`.
+- O modo KRaft exige um `CLUSTER_ID`. Ele fica gravado no `meta.properties` do volume quando o storage é formatado. Se o `CLUSTER_ID` do compose mudar e o volume antigo continuar, o broker não sobe por divergência de cluster id. Para trocar, apague o volume com `docker compose down -v`, o que também apaga as mensagens.
 
 **Documentação**
 
