@@ -10,7 +10,7 @@ services:
       DB_PASSWORD_IMOVEIS_APP: ${DB_PASSWORD_IMOVEIS_APP}
       POSTGRES_INITDB_ARGS: '--locale-provider=icu --icu-locale=pt-BR'
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql
       - ./postgres/docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d:ro
@@ -46,7 +46,7 @@ services:
       start_period: 40s
       start_interval: 5s
     ports:
-      - "9092:9092"
+      - "127.0.0.1:9092:9092"
     volumes:
       - kafka_data:/var/lib/kafka/data
 
@@ -57,7 +57,7 @@ services:
       kafka:
         condition: service_healthy
     ports:
-      - "8081:8081"
+      - "127.0.0.1:8081:8081"
     environment:
       SCHEMA_REGISTRY_HOST_NAME: schema-registry
       SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: PLAINTEXT://kafka:9093
@@ -74,7 +74,7 @@ services:
     image: ghcr.io/kafbat/kafka-ui:${KAFKA_UI_VERSION}
     container_name: kafka_ui_container
     ports:
-      - "8080:8080"
+      - "127.0.0.1:8082:8080"
     environment:
       KAFKA_CLUSTERS_0_NAME: local
       KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9093
