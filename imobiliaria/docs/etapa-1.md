@@ -105,11 +105,11 @@ As trilhas Postgres (T1 → T2) e Kafka (T3 → T4 → T5) são independentes. A
 
 **Critérios de aceite**
 
-- [ ] A imagem tem tag fixa, compatível com a versão do Kafka.
-- [ ] `curl localhost:<porta>/subjects` devolve `[]`.
-- [ ] Você registra um schema de teste pela API REST, lê de volta e depois apaga.
-- [ ] `GET /config` mostra o nível de compatibilidade. O padrão é `BACKWARD`; o modo definitivo é decisão da etapa 2.
-- [ ] O tópico `_schemas` aparece no Kafka.
+- [X] A imagem tem tag fixa, compatível com a versão do Kafka.
+- [X] `curl localhost:<porta>/subjects` devolve `[]`.
+- [X] Você registra um schema de teste pela API REST, lê de volta e depois apaga.
+- [X] `GET /config` mostra o nível de compatibilidade. O padrão é `BACKWARD`; o modo definitivo é decisão da etapa 2.
+- [X] O tópico `_schemas` aparece no Kafka.
 
 **Pontos de atenção**
 

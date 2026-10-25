@@ -50,6 +50,26 @@ services:
     volumes:
       - kafka_data:/var/lib/kafka/data
 
+  schema-registry:
+    image: confluentinc/cp-schema-registry:${CP_VERSION}
+    container_name: cp_schema_registry_container
+    depends_on:
+      kafka:
+        condition: service_healthy
+    ports:
+      - "8081:8081"
+    environment:
+      SCHEMA_REGISTRY_HOST_NAME: schema-registry
+      SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: PLAINTEXT://kafka:9093
+      SCHEMA_REGISTRY_LISTENERS: http://0.0.0.0:8081
+      SCHEMA_REGISTRY_KAFKASTORE_TOPIC_REPLICATION_FACTOR: 1
+    healthcheck:
+      test: [ "CMD-SHELL", "ub sr-ready schema-registry 8081 10" ]
+      timeout: 15s
+      interval: 15s
+      start_period: 45s
+      start_interval: 5s
+
 volumes:
   postgres_data:
   kafka_data:
