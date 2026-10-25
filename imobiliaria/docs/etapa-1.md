@@ -4,10 +4,10 @@ Docker Compose com Postgres (PostGIS, um database por serviço), Kafka (KRaft), 
 
 ## Definição de pronto
 
-- [ ] A partir do zero, `docker compose down -v && docker compose up -d` deixa todos os serviços `healthy`, sem nenhum passo manual.
-- [ ] É possível produzir e consumir num tópico de teste.
-- [ ] O Schema Registry responde.
-- [ ] O database `imoveis` existe, com os roles e as extensões.
+- [x] A partir do zero, `docker compose down -v && docker compose up -d` deixa todos os serviços `healthy`, sem nenhum passo manual.
+- [x] É possível produzir e consumir num tópico de teste.
+- [x] O Schema Registry responde.
+- [x] O database `imoveis` existe, com os roles e as extensões.
 
 ## Decisão pendente
 
@@ -143,8 +143,8 @@ As trilhas Postgres (T1 → T2) e Kafka (T3 → T4 → T5) são independentes. A
 
 **Critérios de aceite**
 
-- [ ] Todo serviço tem healthcheck, e as dependências usam `service_healthy`.
-- [ ] A definição de pronto, no início deste arquivo, funciona.
-- [ ] Existe um `docs/infra.md` com URLs, portas e credenciais de desenvolvimento.
-- [ ] O status da etapa está atualizado no `CLAUDE.md`.
-- [ ] As regras de negócio e as decisões em aberto da etapa 2 foram revisadas, e as que bloqueiam o início dela estão decididas.
+- [x] Todo serviço tem healthcheck, e as dependências usam `service_healthy`.
+- [x] A definição de pronto, no início deste arquivo, funciona.
+- [x] Existe um `docs/infra.md` com URLs, portas e credenciais de desenvolvimento.
+- [x] O status da etapa está atualizado no `CLAUDE.md`.
+- [x] As regras de negócio e as decisões em aberto da etapa 2 foram revisadas, e as que bloqueiam o início dela estão decididas.

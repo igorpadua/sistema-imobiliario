@@ -173,6 +173,13 @@ docs/
 - **`FORCE ROW LEVEL SECURITY`** em todas as tabelas. Superuser e roles com `BYPASSRLS` sempre ignoram o RLS, e o `FORCE` só tem efeito sobre o dono da tabela. Como o dono também fica sob RLS, o DDL das migrações funciona normalmente, mas uma migração de dados precisa definir o tenant explicitamente.
 - **Unicidade:** sempre por tenant, por exemplo `UNIQUE (tenant_id, codigo)`. Não existe entidade global entre tenants.
 
+### Identificadores
+
+- **Ids dos agregados:** UUID v7 (RFC 9562). É ordenado pelo tempo, o que preserva a localidade do índice B-tree.
+- **Gerados no método de fábrica do agregado,** não pelo Hibernate nem pelo banco: o agregado já nasce com id, e os eventos de domínio criados na fábrica já o carregam. Com o id preenchido, o Spring Data decide entre `persist` e `merge` pelo `@Version`, que precisa ser de tipo wrapper (nulo = novo). O gerador de v7 é escolhido na tarefa do primeiro agregado.
+- **`tenant_id`:** UUID. A policy do RLS converte o `app.tenant_id` para `uuid`.
+- **No Avro:** `string` com `logicalType: uuid`.
+
 ### Autenticação e autorização
 
 - **Keycloak:** um único realm, `imobiliarias`.
@@ -311,7 +318,7 @@ Um padrão entra quando resolve um problema real do projeto, não por antecipaç
   - `ocupacao`: VAGO, LOCADO (muda só por eventos de Contratos);
   - status da oferta: ATIVA, RESERVADA, PAUSADA, ENCERRADA.
 - **Proprietários:** com percentual de posse; a soma deve ser exatamente 100. O `PUT` substitui a lista inteira.
-- **Mídia:** URL pré-assinada do MinIO, upload direto pelo front, confirmação, e miniaturas geradas de forma assíncrona.
+- **Mídia:** URL pré-assinada do MinIO, upload direto pelo front, confirmação, e miniaturas geradas de forma assíncrona. Fica para depois do marco, numa etapa própria, porque não faz parte do fluxo do marco.
 - **Busca:** Postgres (índices, `pg_trgm`, PostGIS). OpenSearch é uma evolução opcional.
 - **Venda de imóvel alugado:** o inquilino tem direito de preferência (Lei 8.245/91, arts. 27 e 28; prazo de 30 dias).
 - **Extras futuros:** controle de chaves, feed XML para portais, CEP via adaptador.
@@ -405,7 +412,6 @@ Itens que ainda precisam de decisão, agrupados pela etapa em que passam a bloqu
 
 ### Etapa 2: Imóveis
 
-- **Tipo dos ids:** `tenant_id` e ids dos agregados (UUID? qual versão?). Afeta o cast na policy do RLS e os schemas Avro.
 - **O que é compartilhado entre áreas do mesmo serviço** (ex.: o value object `Endereco`, ou `Oferta` precisando de dados do `Imovel`): referência só por id, pacote comum na raiz do serviço, ou uma área usar o agregado público da outra.
 - **Fake do publicador de eventos:** com o outbox, o handler grava o evento numa tabela, na mesma transação. Avaliar se o fake ainda faz sentido ao projetar o outbox.
 - **Outbox e jobs × RLS:** o publicador e os jobs atravessam tenants, e o role da aplicação não tem `BYPASSRLS`. Opções: role separado com `BYPASSRLS`, outbox fora do RLS, ou execução por tenant (exige a lista de tenants em cada serviço).
@@ -417,7 +423,6 @@ Itens que ainda precisam de decisão, agrupados pela etapa em que passam a bloqu
 - **Escala dos percentuais:** com quantas casas o percentual de posse soma "exatamente 100" (ex.: 33,33 + 33,33 + 33,34).
 - **Datas e fuso:** tipo de `ocorridoEm` (`Instant` em UTC?), da competência (`YearMonth`?) e fuso dos jobs (`America/Sao_Paulo`?).
 - **Status HTTP restantes:** erro de formato ou validação (400?), conflito pego pelo `@Version` (409 ou 412?) e requisição sem `If-Match` (428 ou aceitar?).
-- **Mídia do imóvel e MinIO:** a mídia (URL pré-assinada, confirmação e miniaturas assíncronas) está decidida em Imóveis, mas a etapa 2 não a inclui, e o MinIO só aparece com Documentos, na etapa 10. Definir se a mídia entra na etapa 2, numa etapa própria ou depois do marco (ela não faz parte do fluxo do marco).
 
 ### Etapa 3: Identidade
 
@@ -460,6 +465,10 @@ Itens que ainda precisam de decisão, agrupados pela etapa em que passam a bloqu
 - **Arredondamento:** modo (`HALF_EVEN` ou `HALF_UP`) e quem fica com o centavo que sobra no rateio do repasse.
 - **Vencimento** em fim de semana ou feriado; tamanho da janela móvel de parcelas.
 
+### Etapa 10: Documentos e Notificações
+
+- **Servidor de objetos:** a edição comunitária do MinIO foi reduzida no fim de 2025 (confirmar a situação atual). Escolher entre o MinIO e uma alternativa compatível com S3 antes de colocá-lo no compose.
+
 ### Etapa 11: Relatórios
 
 - **DIMOB e informe de rendimentos × eventos sem documento:** Relatórios precisa de CPF/CNPJ, que os eventos não trazem. Opções: consulta interna a Pessoas (ampliando a exceção às chamadas síncronas) ou geração em outro serviço.
@@ -485,7 +494,7 @@ Itens que ainda precisam de decisão, agrupados pela etapa em que passam a bloqu
 
 ## Ordem de implementação e status
 
-- [ ] 1. Infraestrutura base: Docker Compose com Postgres (PostGIS, um database por serviço), Kafka (KRaft), Confluent Schema Registry e Kafka UI.
+- [x] 1. Infraestrutura base: Docker Compose com Postgres (PostGIS, um database por serviço), Kafka (KRaft), Confluent Schema Registry e Kafka UI.
 - [ ] 2. Imóveis: primeiro serviço, com RLS, validação de token (testada com `jwt()`, ainda sem Keycloak) e outbox. Pronto quando um imóvel criado gera o evento no Kafka, com o tenant no header.
 - [ ] 3. Identidade: Keycloak (realm importado com dois tenants e client de desenvolvimento) e Traefik. Pronto quando o Imóveis aceita um token real obtido pelo client de desenvolvimento e recusa um `X-Tenant-Id` fora do token.
 - [ ] 4. Pessoas: primeiro consumidor de eventos de outro serviço. Aqui o starter interno e os convention plugins são extraídos.
@@ -497,10 +506,13 @@ Itens que ainda precisam de decisão, agrupados pela etapa em que passam a bloqu
 - [ ] 10. Documentos e Notificações
 - [ ] 11. Relatórios
 - [ ] 12. Tenants e BFF completos
+- [ ] Depois do marco: mídia do imóvel (URL pré-assinada, confirmação e miniaturas).
 - [ ] Opcional, depois do marco: reescrever um serviço já pronto em outra linguagem, sem alterar os demais, para provar que os contratos de eventos estão desacoplados.
 
-**Etapa atual:** 1. Infraestrutura base
+**Etapa atual:** 2. Imóveis
 
 **Notas da etapa:**
 <!-- atualize aqui o que está em andamento e as dúvidas abertas -->
 - O esqueleto de `servicos/imoveis` (Spring Boot gerado pelo Initializr) já existe.
+- A infraestrutura local está documentada em `docs/infra.md`.
+- O roteiro da etapa 2 (`docs/etapa-2.md`) ainda não foi escrito. Cada tarefa dele deve indicar quais decisões em aberto precisam estar tomadas antes.
