@@ -125,7 +125,7 @@ As trilhas Postgres (T1 → T2) e Kafka (T3 → T4 → T5) são independentes. A
 
 **Critérios de aceite**
 
-- [ ] A interface mostra o cluster, os tópicos, os consumer groups e os subjects do Schema Registry.
+- [x] A interface mostra o cluster, os tópicos, os consumer groups e os subjects do Schema Registry.
 
 **Pontos de atenção**
 

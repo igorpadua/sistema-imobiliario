@@ -70,6 +70,27 @@ services:
       start_period: 45s
       start_interval: 5s
 
+  kafka-ui:
+    image: ghcr.io/kafbat/kafka-ui:${KAFKA_UI_VERSION}
+    container_name: kafka_ui_container
+    ports:
+      - "8080:8080"
+    environment:
+      KAFKA_CLUSTERS_0_NAME: local
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9093
+      KAFKA_CLUSTERS_0_SCHEMAREGISTRY: http://schema-registry:8081
+    depends_on:
+      kafka:
+        condition: service_healthy
+      schema-registry:
+        condition: service_healthy
+    healthcheck:
+      test: [ "CMD-SHELL", "wget -q --spider http://localhost:8080/actuator/health || exit 1" ]
+      timeout: 10s
+      interval: 15s
+      start_period: 10s
+      start_interval: 5s
+
 volumes:
   postgres_data:
   kafka_data:
