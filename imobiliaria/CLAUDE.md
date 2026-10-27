@@ -8,16 +8,16 @@ Este é um projeto de estudo. O objetivo é que **eu** aprenda escrevendo o cód
 
 - Não escreve código de produção nem de teste para as tarefas do projeto: classes, métodos, migrações SQL, configurações Spring/Kafka, Dockerfiles, `docker-compose.yml`, build Gradle.
 - Não cria, edita nem apaga arquivos do repositório. Exceção: documentação (este arquivo e `docs/`), e só quando eu pedir.
-- Não roda comandos que alteram estado (subir ou derrubar containers, inserir ou apagar dados, criar tópicos, fazer commits), a menos que eu peça.
+- Não roda comandos que alteram estado (subir ou derrubar containers, inserir ou apagar dados, criar tópicos, fazer commits, criar ou editar issues), a menos que eu peça.
 - Não entrega a solução pronta quando eu travar. Use as dicas progressivas descritas abaixo.
 - Essas regras valem também para skills e plugins instalados que mandem implementar código (TDD, execução de planos e similares): use-os só para planejar, revisar e depurar.
 
 ### O que você faz
 
 - Explica conceitos e mostra como se aplicam a este projeto, indicando a documentação oficial.
-- Quebra funcionalidades em tarefas pequenas, cada uma com critérios de aceite.
+- Quebra funcionalidades em tarefas pequenas, cada uma com critérios de aceite, e as registra como issues quando eu pedir (ver **Tarefas no GitHub**).
 - Lista cenários de teste (nome e o que verificar) para eu implementar.
-- Revisa meu código apontando arquivo e linha, explicando o porquê e indicando a direção da correção, sem reescrever.
+- Revisa meu código, de preferência no PR da tarefa, apontando arquivo e linha, explicando o porquê e indicando a direção da correção, sem reescrever.
 - Lê arquivos e roda comandos de verificação (`./gradlew test`, `./gradlew build`, `docker compose ps`, `docker compose logs`, consultas no Postgres e no Kafka) para coletar evidências e explicar erros. Quem aplica a correção sou eu.
 - Pode mostrar trechos curtos (até cerca de 10 linhas) para ilustrar uma API ou sintaxe, sempre em exemplo genérico, nunca a solução da tarefa atual.
 
@@ -154,8 +154,16 @@ docs/
 - **Incremental:** cada dependência e cada abstração entram quando a necessidade aparece, não antes.
 - **Extrair quando repetir:** o código compartilhado (starter interno e convention plugins) nasce dentro do primeiro serviço e é extraído quando o segundo precisar.
 - **Uma linguagem até o fluxo funcionar:** tudo em Java. Outra tecnologia só depois do marco.
-- **Decisões registradas:** toda mudança de decisão é atualizada neste arquivo.
-- **Revisão de fechamento de etapa:** ao concluir uma etapa, conferir se o implementado bate com as decisões deste arquivo e registrar as lacunas descobertas. Depois, revisar as regras de negócio (e as leis citadas) dos serviços da próxima etapa, atualizar **Decisões em aberto** e decidir antes de começar o que bloqueia as primeiras tarefas.
+- **Decisões registradas:** toda mudança de decisão é atualizada neste arquivo. Ele é a fonte da verdade das decisões; a issue de decisão guarda a discussão.
+- **Tarefas no GitHub:** os roteiros das etapas ficam em issues, não em `docs/`.
+  - Cada etapa é uma issue pai (rótulo `etapa`).
+  - Tarefas e decisões são sub-issues dela, com o rótulo `tarefa` ou `decisão` mais o do serviço (ex.: `imoveis`). Títulos no formato `E2.T1 ...` e `E2 Decisão: ...`.
+  - O formato de cada tipo (etapa, tarefa e decisão) está nos templates em `.github/ISSUE_TEMPLATE/`.
+  - Dependências pela relação nativa "blocked by", não no texto da issue.
+  - O board é o Project "Sistema imobiliário".
+- **Um PR por tarefa,** com `Closes #N`. A revisão acontece no PR, e a CI (GitHub Actions, criada na etapa 2) roda `./gradlew build` em cada um.
+- **`docs/`** guarda só documentação de referência, como `docs/infra.md`.
+- **Revisão de fechamento de etapa:** é a seção de fechamento da issue pai. Ao concluir uma etapa, conferir se o implementado bate com as decisões deste arquivo e registrar as lacunas descobertas. Depois, revisar as regras de negócio (e as leis citadas) dos serviços da próxima etapa, atualizar **Decisões em aberto**, criar as issues da próxima etapa e decidir antes de começar o que bloqueia as primeiras tarefas.
 
 ---
 
@@ -408,7 +416,7 @@ Um padrão entra quando resolve um problema real do projeto, não por antecipaç
 
 ## Decisões em aberto
 
-Itens que ainda precisam de decisão, agrupados pela etapa em que passam a bloquear o trabalho. Ao decidir, mova o item para a seção correspondente deste arquivo.
+Itens que ainda precisam de decisão, agrupados pela etapa em que passam a bloquear o trabalho. Quando a etapa começa, os itens dela viram issues de decisão e saem desta lista. Ao fechar a issue, a decisão entra na seção correspondente deste arquivo.
 
 ### Etapa 2: Imóveis
 
@@ -494,8 +502,8 @@ Itens que ainda precisam de decisão, agrupados pela etapa em que passam a bloqu
 
 ## Ordem de implementação e status
 
-- [x] 1. Infraestrutura base: Docker Compose com Postgres (PostGIS, um database por serviço), Kafka (KRaft), Confluent Schema Registry e Kafka UI.
-- [ ] 2. Imóveis: primeiro serviço, com RLS, validação de token (testada com `jwt()`, ainda sem Keycloak) e outbox. Pronto quando um imóvel criado gera o evento no Kafka, com o tenant no header.
+- [x] 1. Infraestrutura base: Docker Compose com Postgres (PostGIS, um database por serviço), Kafka (KRaft), Confluent Schema Registry e Kafka UI. Issue #1.
+- [ ] 2. Imóveis: primeiro serviço, com RLS, validação de token (testada com `jwt()`, ainda sem Keycloak) e outbox. Pronto quando um imóvel criado gera o evento no Kafka, com o tenant no header. Issue #9.
 - [ ] 3. Identidade: Keycloak (realm importado com dois tenants e client de desenvolvimento) e Traefik. Pronto quando o Imóveis aceita um token real obtido pelo client de desenvolvimento e recusa um `X-Tenant-Id` fora do token.
 - [ ] 4. Pessoas: primeiro consumidor de eventos de outro serviço. Aqui o starter interno e os convention plugins são extraídos.
 - [ ] 5. Contratos: máquina de estados e regras da Lei do Inquilinato.
@@ -515,4 +523,4 @@ Itens que ainda precisam de decisão, agrupados pela etapa em que passam a bloqu
 <!-- atualize aqui o que está em andamento e as dúvidas abertas -->
 - O esqueleto de `servicos/imoveis` (Spring Boot gerado pelo Initializr) já existe.
 - A infraestrutura local está documentada em `docs/infra.md`.
-- O roteiro da etapa 2 (`docs/etapa-2.md`) ainda não foi escrito. Cada tarefa dele deve indicar quais decisões em aberto precisam estar tomadas antes.
+- O roteiro da etapa 2 está na issue #9, com as tarefas e as decisões como sub-issues. A migração do `docs/etapa-2.md` está em andamento; quando terminar, o arquivo sai.
