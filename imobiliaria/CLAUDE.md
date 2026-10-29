@@ -420,17 +420,7 @@ Itens que ainda precisam de decisão, agrupados pela etapa em que passam a bloqu
 
 ### Etapa 2: Imóveis
 
-- **O que é compartilhado entre áreas do mesmo serviço** (ex.: o value object `Endereco`, ou `Oferta` precisando de dados do `Imovel`): referência só por id, pacote comum na raiz do serviço, ou uma área usar o agregado público da outra.
-- **Fake do publicador de eventos:** com o outbox, o handler grava o evento numa tabela, na mesma transação. Avaliar se o fake ainda faz sentido ao projetar o outbox.
-- **Outbox e jobs × RLS:** o publicador e os jobs atravessam tenants, e o role da aplicação não tem `BYPASSRLS`. Opções: role separado com `BYPASSRLS`, outbox fora do RLS, ou execução por tenant (exige a lista de tenants em cada serviço).
-- **Envelope do evento:** campo com o tipo do evento; se `versao` é a versão do agregado; um evento de integração por transação (dois eventos do mesmo comando com a mesma versão fariam o consumidor descartar o segundo); eventos sem agregado, como `PagamentoRecebido`.
-- **Vários tipos de evento por tópico:** a estratégia padrão do Schema Registry (`TopicNameStrategy`) aceita um schema por tópico. Opções: `RecordNameStrategy`, `TopicRecordNameStrategy`, union ou envelope por agregado.
-- **Modo de compatibilidade:** "compatível com a versão anterior" equivale a `BACKWARD` não transitivo. O replay de tópicos com retenção infinita pede um modo transitivo (`FULL_TRANSITIVE` cobre consumidores novos e antigos). Definir também como o build verifica.
-- **Local dos schemas Avro:** dentro de Imóveis até a etapa 4 ou já em `libs/eventos-schemas`.
-- **Representação de dinheiro:** centavos em `long` ou `BigDecimal`, com o tipo correspondente no Postgres e no Avro (o preço da oferta já precisa disso).
-- **Escala dos percentuais:** com quantas casas o percentual de posse soma "exatamente 100" (ex.: 33,33 + 33,33 + 33,34).
-- **Datas e fuso:** tipo de `ocorridoEm` (`Instant` em UTC?), da competência (`YearMonth`?) e fuso dos jobs (`America/Sao_Paulo`?).
-- **Status HTTP restantes:** erro de formato ou validação (400?), conflito pego pelo `@Version` (409 ou 412?) e requisição sem `If-Match` (428 ou aceitar?).
+As decisões desta etapa viraram issues com o rótulo `decisão`, sub-issues da #9.
 
 ### Etapa 3: Identidade
 
@@ -466,12 +456,14 @@ Itens que ainda precisam de decisão, agrupados pela etapa em que passam a bloqu
 - **Dois caminhos escrevem os proprietários:** o `PUT` do usuário e o `VendaConcluida` substituem a mesma lista. Definir se o `PUT` continua permitido com venda em andamento e o que fazer se a lista mudar entre a conclusão da venda e a chegada do evento.
 - **Outorga do cônjuge do vendedor:** proprietário casado precisa da autorização do cônjuge para vender, salvo na separação absoluta (Código Civil, art. 1.647, I). O modelo de cônjuge criado para o fiador pode ser reaproveitado.
 - **DIMOB:** confirmar na instrução normativa da Receita se a intermediação de compra e venda entra na declaração; se entrar, Relatórios precisa dos dados da venda.
-- **Ofertas de locação e venda ao mesmo tempo:** o índice único por modalidade permite as duas, mas não define como uma afeta a outra: o que acontece com a oferta de locação quando a proposta de venda é aceita ou a venda é concluída, e com a oferta de venda quando a locação é fechada (o comprador passa a herdar o inquilino). Falta também a condição do índice parcial (quais status contam) e quando uma oferta fica RESERVADA.
+- **Ofertas de locação e venda ao mesmo tempo:** o índice único por modalidade permite as duas, mas não define como uma afeta a outra: o que acontece com a oferta de locação quando a proposta de venda é aceita ou a venda é concluída, e com a oferta de venda quando a locação é fechada (o comprador passa a herdar o inquilino). A condição do índice parcial e o status RESERVADA estão na issue #26.
 
 ### Etapas 6 a 8: Financeiro, Bancário e Repasses
 
 - **Arredondamento:** modo (`HALF_EVEN` ou `HALF_UP`) e quem fica com o centavo que sobra no rateio do repasse.
 - **Vencimento** em fim de semana ou feriado; tamanho da janela móvel de parcelas.
+- **Datas:** tipo da competência (`YearMonth`?) e fuso dos jobs (`America/Sao_Paulo`?). O `ocorridoEm` foi tratado na etapa 2 (#16).
+- **Eventos sem agregado,** como `PagamentoRecebido` (etapa 7): qual id vira a chave da mensagem e o que `versao` significa no envelope.
 
 ### Etapa 10: Documentos e Notificações
 
@@ -523,4 +515,4 @@ Itens que ainda precisam de decisão, agrupados pela etapa em que passam a bloqu
 <!-- atualize aqui o que está em andamento e as dúvidas abertas -->
 - O esqueleto de `servicos/imoveis` (Spring Boot gerado pelo Initializr) já existe.
 - A infraestrutura local está documentada em `docs/infra.md`.
-- O roteiro da etapa 2 está na issue #9, com as tarefas e as decisões como sub-issues. A migração do `docs/etapa-2.md` está em andamento; quando terminar, o arquivo sai.
+- O roteiro da etapa 2 está na issue #9, com as tarefas e as decisões como sub-issues.
