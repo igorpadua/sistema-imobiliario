@@ -325,7 +325,11 @@ Um padrão entra quando resolve um problema real do projeto, não por antecipaç
   - `situacao`: RASCUNHO, ATIVO, INATIVO (muda por ação do usuário);
   - `ocupacao`: VAGO, LOCADO (muda só por eventos de Contratos);
   - status da oferta: ATIVA, RESERVADA, PAUSADA, ENCERRADA.
-- **Proprietários:** com percentual de posse; a soma deve ser exatamente 100. O `PUT` substitui a lista inteira.
+- **Ciclo da `situacao`:**
+  - RASCUNHO → ATIVO e INATIVO → ATIVO exigem proprietários definidos. A soma 100 é invariante da lista (value object), então um imóvel ativo nunca tem soma diferente de 100.
+  - RASCUNHO → INATIVO descarta o cadastro. Não há exclusão física de imóvel nem `DELETE` na API. Um estado `DESCARTADO`, sem volta, fica para quando houver necessidade.
+  - Inativar é recusado com `ocupacao` LOCADO (implementado na etapa 5, com o listener `contratoativado`). Eventos de Contratos não são recusados, então INATIVO + LOCADO pode surgir por atraso de evento e é tolerado.
+- **Proprietários:** com percentual de posse em quatro casas decimais (`numeric(7,4)`); a soma deve ser exatamente 100, e um valor com mais casas é recusado, não arredondado. O `PUT` substitui a lista inteira.
 - **Mídia:** URL pré-assinada do MinIO, upload direto pelo front, confirmação, e miniaturas geradas de forma assíncrona. Fica para depois do marco, numa etapa própria, porque não faz parte do fluxo do marco.
 - **Busca:** Postgres (índices, `pg_trgm`, PostGIS). OpenSearch é uma evolução opcional.
 - **Venda de imóvel alugado:** o inquilino tem direito de preferência (Lei 8.245/91, arts. 27 e 28; prazo de 30 dias).
@@ -478,6 +482,17 @@ As decisões desta etapa viraram issues com o rótulo `decisão`, sub-issues da 
 - **Cadastro de tenants × "não existe entidade global":** a tabela de tenants é uma exceção ou também fica sob RLS.
 - **Portal do cliente:** como o usuário do Keycloak se liga à `Pessoa`, e se o client separado implica outro BFF.
 
+### Depois do marco: Auditoria
+
+Serviço que consome os eventos de todos os serviços e guarda a trilha de alterações (antes, depois e autor). O autor no envelope é tratado na etapa 2 (#15).
+
+- **Destino da trilha:** tabela append-only no Postgres, com RLS, ou Elasticsearch/OpenSearch, com busca melhor mas sem RLS (o isolamento entre tenants ficaria só no código).
+- **Antes e depois:** o serviço guarda o último snapshot de cada agregado e calcula a diferença, ou o evento passa a levar os campos alterados.
+- **Campos sensíveis:** o que não vai nos eventos (documento, dados bancários) aparece só como "alterado", sem valores. Confirmar se basta.
+- **Auditoria de leitura de dados pessoais:** hoje exigida em Pessoas e na consulta interna. Definir se vira evento (ex.: `DocumentoConsultado`) consumido pela Auditoria ou se fica local em cada serviço.
+- **Histórico anterior ao serviço:** tópicos sem retenção infinita (ex.: `imoveis.v1`) perdem os eventos antigos. Definir retenção maior ou aceitar que a trilha começa quando o serviço entra.
+- **Acesso e guarda:** quais papéis leem a trilha e por quanto tempo ela é guardada. O `sub` do funcionário também é dado pessoal (LGPD).
+
 ---
 
 ## Glossário
@@ -507,6 +522,7 @@ As decisões desta etapa viraram issues com o rótulo `decisão`, sub-issues da 
 - [ ] 11. Relatórios
 - [ ] 12. Tenants e BFF completos
 - [ ] Depois do marco: mídia do imóvel (URL pré-assinada, confirmação e miniaturas).
+- [ ] Depois do marco: Auditoria, serviço com a trilha de alterações feitas pelos usuários (ver **Decisões em aberto**).
 - [ ] Opcional, depois do marco: reescrever um serviço já pronto em outra linguagem, sem alterar os demais, para provar que os contratos de eventos estão desacoplados.
 
 **Etapa atual:** 2. Imóveis
