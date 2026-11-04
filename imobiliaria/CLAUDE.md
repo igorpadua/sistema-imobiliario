@@ -329,7 +329,7 @@ Um padrão entra quando resolve um problema real do projeto, não por antecipaç
   - RASCUNHO → ATIVO e INATIVO → ATIVO exigem proprietários definidos. A soma 100 é invariante da lista (value object), então um imóvel ativo nunca tem soma diferente de 100.
   - RASCUNHO → INATIVO descarta o cadastro. Não há exclusão física de imóvel nem `DELETE` na API. Um estado `DESCARTADO`, sem volta, fica para quando houver necessidade.
   - Inativar é recusado com `ocupacao` LOCADO (implementado na etapa 5, com o listener `contratoativado`). Eventos de Contratos não são recusados, então INATIVO + LOCADO pode surgir por atraso de evento e é tolerado.
-- **Proprietários:** com percentual de posse em quatro casas decimais (`numeric(7,4)`); a soma deve ser exatamente 100, e um valor com mais casas é recusado, não arredondado. O `PUT` substitui a lista inteira.
+- **Proprietários:** com percentual de posse em quatro casas decimais (`numeric(7,4)`); a soma deve ser exatamente 100, e um valor com mais casas é recusado, não arredondado. O `PUT` substitui a lista inteira. O `pessoaId` não é validado até a etapa 4. A partir dela, é conferido numa cópia local de `pessoas.v1` (só `id`, `tenant_id` e `versao`), que só o consumidor escreve e para a qual os proprietários não têm foreign key.
 - **Mídia:** URL pré-assinada do MinIO, upload direto pelo front, confirmação, e miniaturas geradas de forma assíncrona. Fica para depois do marco, numa etapa própria, porque não faz parte do fluxo do marco.
 - **Busca:** Postgres (índices, `pg_trgm`, PostGIS). OpenSearch é uma evolução opcional.
 - **Venda de imóvel alugado:** o inquilino tem direito de preferência (Lei 8.245/91, arts. 27 e 28; prazo de 30 dias).
@@ -436,6 +436,7 @@ As decisões desta etapa viraram issues com o rótulo `decisão`, sub-issues da 
 - **Critério de idempotência:** tabela de eventos processados × upsert por versão. Sugestão: upsert para projeções de estado; tabela para consumidores com efeito colateral.
 - **DLQ por tópico ou por (tópico, consumidor):** com dois consumidores no mesmo tópico, uma DLQ compartilhada não indica quem falhou, e o reprocessamento entregaria a mensagem aos dois.
 - **Índice cego:** normalização antes do HMAC (pontuação, maiúsculas no CNPJ alfanumérico) e chave por tenant ou global (a global permite correlacionar a mesma pessoa entre tenants).
+- **`pessoaId` ainda não copiado para o Imóveis:** o `PUT` de proprietários pode chegar antes de a pessoa recém-criada estar na cópia local. Opções: 422 com um `type` próprio, para o cliente tentar de novo, ou aceitar e bloquear a ativação enquanto houver proprietário não confirmado. Definir também o efeito do `PessoaAnonimizada` e do tombstone na cópia.
 - **Entrada da observabilidade:** OpenTelemetry, Grafana, Tempo e Loki estão na stack, mas em nenhuma etapa. Sugestão: na etapa 4, com o primeiro fluxo entre dois serviços, antes das sagas das etapas 5 a 8. O outbox quebra a propagação do trace (o evento é publicado depois, por outro processo): o contexto precisa ser gravado na linha do outbox e repassado nos headers do Kafka.
 
 ### Etapa 5: Contratos
