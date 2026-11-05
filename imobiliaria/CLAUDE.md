@@ -327,6 +327,12 @@ Um padrão entra quando resolve um problema real do projeto, não por antecipaç
 
 - **Agregado `Imovel`:** código legível único por tenant (gerado por uma tabela de sequência por tenant), tipo, uso, endereço (value object com latitude e longitude), características, matrícula, inscrição de IPTU.
 - **Características mínimas:** quartos, suítes, banheiros e vagas, obrigatórios e ≥ 0; as suítes contam entre os quartos (suítes ≤ quartos). Área útil opcional, > 0 quando informada. O conjunto cresce quando a busca ou os portais pedirem.
+- **Endereço:**
+  - logradouro, número, bairro, cidade, UF e CEP obrigatórios; complemento opcional;
+  - número em `String`, porque "S/N" existe;
+  - CEP com 8 dígitos, guardado sem hífen: o construtor normaliza "01310-100" para "01310100";
+  - UF como enum com as 27 siglas;
+  - latitude e longitude opcionais, mas sempre em par, em `Double` (o PostGIS guarda `float8`; a proibição de `double` vale para dinheiro). `NaN` e infinito são recusados. Imóvel sem coordenadas fica fora da busca geográfica.
 - **Invariante × completude:**
   - invariante vale em qualquer `situacao` e fica no value object, validada no construtor (ex.: contagens ≥ 0);
   - completude é o mínimo para ir a público e é conferida na transição para ATIVO (ex.: proprietários definidos), porque o RASCUNHO aceita cadastro incompleto;
