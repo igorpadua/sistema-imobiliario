@@ -326,6 +326,11 @@ Um padrão entra quando resolve um problema real do projeto, não por antecipaç
 ### Imóveis
 
 - **Agregado `Imovel`:** código legível único por tenant (gerado por uma tabela de sequência por tenant), tipo, uso, endereço (value object com latitude e longitude), características, matrícula, inscrição de IPTU.
+- **Características mínimas:** quartos, suítes, banheiros e vagas, obrigatórios e ≥ 0; as suítes contam entre os quartos (suítes ≤ quartos). Área útil opcional, > 0 quando informada. O conjunto cresce quando a busca ou os portais pedirem.
+- **Invariante × completude:**
+  - invariante vale em qualquer `situacao` e fica no value object, validada no construtor (ex.: contagens ≥ 0);
+  - completude é o mínimo para ir a público e é conferida na transição para ATIVO (ex.: proprietários definidos), porque o RASCUNHO aceita cadastro incompleto;
+  - regras de completude por tipo de imóvel ficam para quando houver requisito real.
 - **Agregado `Oferta`:** separado do imóvel, com uma oferta por modalidade (`LOCACAO`/`VENDA`), garantida por índice único parcial. Mudar o preço encerra a oferta atual e cria outra, o que gera histórico.
 - **Status separados:**
   - `situacao`: RASCUNHO, ATIVO, INATIVO (muda por ação do usuário);
