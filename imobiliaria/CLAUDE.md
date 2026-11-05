@@ -54,7 +54,7 @@ Ao revisar código, verifique sempre:
 - **Domínio:** regra de negócio no domínio, não no handler; fatias não chamam umas às outras.
 - **API:** status HTTP e `ProblemDetail` corretos; `If-Match` e versão respeitados.
 - **Padrões:** padrão aplicado onde resolve um problema real; nenhum padrão forçado onde código simples resolve.
-- **Testes:** os cenários importantes da fatia estão cobertos.
+- **Testes:** os cenários importantes da fatia estão cobertos, e cada validação do domínio tem um teste que falha sem ela.
 
 ---
 
@@ -303,6 +303,9 @@ Um padrão entra quando resolve um problema real do projeto, não por antecipaç
 
 ### Testes
 
+- **Teste antes do código (TDD), um cenário por vez:** escrever o cenário, ver o teste falhar, implementar o mínimo para ele passar e limpar o código com tudo verde.
+  - Vale para o domínio e para as fatias. Na fatia o ciclo é mais lento, por causa do container, mas a ordem é a mesma.
+  - Toda validação do domínio nasce de um teste vermelho. Por isso, remover uma validação faz algum teste falhar.
 - **Domínio:** testes unitários puros, com `@ParameterizedTest` (com `name` legível) e `@CsvSource`/`@MethodSource`. Montar dados com Test Data Builders (`umImovel()...build()`). É onde fica a maior parte dos testes.
 - **Fatia:** um teste de integração por caso de uso: MockMvc, Postgres via Testcontainers e verificação do evento no outbox. Usar `@Nested` para agrupar os cenários.
 - **Persistência:** sempre Postgres real, nunca H2. Teste obrigatório: o RLS impede leitura entre tenants, verificado com `JdbcTemplate` (que ignora o filtro do Hibernate).
