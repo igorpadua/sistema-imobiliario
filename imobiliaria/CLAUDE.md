@@ -162,6 +162,9 @@ docs/
   - Dependências pela relação nativa "blocked by", não no texto da issue.
   - O board é o Project "Sistema imobiliário".
 - **Um PR por tarefa,** com `Closes #N`. A revisão acontece no PR, e a CI (GitHub Actions, criada na etapa 2) roda `./gradlew build` em cada um.
+- **Branch por tarefa:** `<issue>-<slug>`, sem prefixo de tipo (o tipo fica nos commits).
+  - O slug é curto, sem acento e em kebab-case, por exemplo `11-agregado-imovel`.
+  - Para criar: `gh issue develop <N> --name <N>-<slug> --checkout`, que já liga a branch à issue.
 - **`docs/`** guarda só documentação de referência, como `docs/infra.md`.
 - **Revisão de fechamento de etapa:** é a seção de fechamento da issue pai. Ao concluir uma etapa, conferir se o implementado bate com as decisões deste arquivo e registrar as lacunas descobertas. Depois, revisar as regras de negócio (e as leis citadas) dos serviços da próxima etapa, atualizar **Decisões em aberto**, criar as issues da próxima etapa e decidir antes de começar o que bloqueia as primeiras tarefas.
 
@@ -184,7 +187,10 @@ docs/
 ### Identificadores
 
 - **Ids dos agregados:** UUID v7 (RFC 9562). É ordenado pelo tempo, o que preserva a localidade do índice B-tree.
-- **Gerados no método de fábrica do agregado,** não pelo Hibernate nem pelo banco: o agregado já nasce com id, e os eventos de domínio criados na fábrica já o carregam. Com o id preenchido, o Spring Data decide entre `persist` e `merge` pelo `@Version`, que precisa ser de tipo wrapper (nulo = novo). O gerador de v7 é escolhido na tarefa do primeiro agregado.
+- **Gerados no método de fábrica do agregado,** não pelo Hibernate nem pelo banco: o agregado já nasce com id, e os eventos de domínio criados na fábrica já o carregam. Com o id preenchido, o Spring Data decide entre `persist` e `merge` pelo `@Version`, que precisa ser de tipo wrapper (nulo = novo).
+- **Gerador:** a JUG (`com.fasterxml.uuid:java-uuid-generator`), com `Generators.timeBasedEpochGenerator()`.
+  - A instância fica num campo `static final`, porque a ordem dentro do mesmo milissegundo depende do estado dela.
+  - Enquanto só um ponto gera ids, a chamada é direta; no segundo, ela é extraída para uma classe própria, o que também facilita a troca pelo gerador nativo do Java.
 - **`tenant_id`:** UUID. A policy do RLS converte o `app.tenant_id` para `uuid`.
 - **No Avro:** `string` com `logicalType: uuid`.
 
