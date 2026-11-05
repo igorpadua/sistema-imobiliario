@@ -96,7 +96,7 @@ Priorize explicações e revisões ligadas a estes temas:
 ## Stack
 
 - **Linguagem e build:** Java 21+ (LTS) com Spring Boot 4. Hoje o build usa Java 25 e Spring Boot 4.1.1. Gradle multi-módulo, em monorepo, com a configuração comum em convention plugins.
-- **Testes:** JUnit 5, AssertJ, Mockito (só nas bordas), Testcontainers, Awaitility, ArchUnit e `spring-security-test`. Sem Groovy nem Spock.
+- **Testes:** JUnit 6 (Jupiter, trazido pelo Spring Boot 4), AssertJ, Mockito (só nas bordas), Testcontainers, Awaitility, ArchUnit e `spring-security-test`. Sem Groovy nem Spock.
 - **Banco:** Postgres com Flyway. No compose, uma única instância (imagem com PostGIS) com um database por serviço, criados por script de init; cada serviço tem os próprios roles e não acessa o database dos outros. PostGIS e `pg_trgm` onde fizer sentido. Ordenação de texto pelo ICU, com locale `pt-BR`, definida para o servidor inteiro no `initdb` (`POSTGRES_INITDB_ARGS`): a imagem é Alpine, e a biblioteca C dela (musl) não ordena por idioma.
 - **Mensageria:** Kafka em modo KRaft (sem ZooKeeper), com Confluent Schema Registry. Eventos em Avro.
 - **Infraestrutura:**
