@@ -160,6 +160,7 @@ docs/
   - Tarefas e decisões são sub-issues dela, com o rótulo `tarefa` ou `decisão` mais o do serviço (ex.: `imoveis`). Títulos no formato `E2.T1 ...` e `E2 Decisão: ...`.
   - O formato de cada tipo (etapa, tarefa e decisão) está nos templates em `.github/ISSUE_TEMPLATE/`.
   - Dependências pela relação nativa "blocked by", não no texto da issue.
+  - Os cenários de teste de cada tarefa ficam num comentário da issue, em checklist, atualizado a cada passo.
   - O board é o Project "Sistema imobiliário".
 - **Um PR por tarefa,** com `Closes #N`. A revisão acontece no PR, e a CI (GitHub Actions, criada na etapa 2) roda `./gradlew build` em cada um.
 - **Branch por tarefa:** `<issue>-<slug>`, sem prefixo de tipo (o tipo fica nos commits).
