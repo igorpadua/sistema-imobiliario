@@ -352,7 +352,7 @@ Um padrão entra quando resolve um problema real do projeto, não por antecipaç
   - RASCUNHO → INATIVO descarta o cadastro. Não há exclusão física de imóvel nem `DELETE` na API. Um estado `DESCARTADO`, sem volta, fica para quando houver necessidade.
   - Inativar é recusado com `ocupacao` LOCADO (implementado na etapa 5, com o listener `contratoativado`). Eventos de Contratos não são recusados, então INATIVO + LOCADO pode surgir por atraso de evento e é tolerado.
 - **Proprietários:**
-  - lista num value object, com percentual de posse em quatro casas decimais (`numeric(7,4)`); um valor com mais casas é recusado, não arredondado;
+  - lista num value object, com percentual de posse em quatro casas decimais (`numeric(7,4)`). Um valor com mais de quatro casas significativas é recusado, não arredondado; zeros à direita não contam (`33.33330` vale `33.3333`). O percentual é guardado sempre com escala 4;
   - invariantes da lista: não vazia, `pessoaId` e percentual obrigatórios, cada percentual > 0, soma exatamente 100 e cada `pessoaId` uma única vez (repetido costuma ser erro de seleção e esconde outro proprietário). Com todos > 0 e soma 100, nenhum passa de 100, então não há checagem de ≤ 100;
   - "sem proprietários" é o campo nulo no `Imovel`, não uma lista vazia: o imóvel nasce sem eles, e a ativação confere se o campo está preenchido;
   - o `PUT` substitui a lista inteira. Lista vazia é recusada, então não há como remover todos os proprietários;
