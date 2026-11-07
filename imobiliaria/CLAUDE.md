@@ -332,7 +332,7 @@ Um padrão entra quando resolve um problema real do projeto, não por antecipaç
 - **Agregado `Imovel`:** código legível único por tenant (gerado por uma tabela de sequência por tenant), tipo, uso, endereço (value object com latitude e longitude), características, matrícula, inscrição de IPTU.
 - **Características mínimas:** quartos, suítes, banheiros e vagas, obrigatórios e ≥ 0; as suítes contam entre os quartos (suítes ≤ quartos). Área útil opcional, > 0 quando informada. O conjunto cresce quando a busca ou os portais pedirem.
 - **Endereço:**
-  - logradouro, número, bairro, cidade, UF e CEP obrigatórios; complemento opcional;
+  - logradouro, número, bairro, cidade, UF e CEP obrigatórios; complemento opcional, e vazio ou só com espaços vira `null` (uma única forma de "sem complemento");
   - textos em `String` (logradouro, número, complemento, bairro, cidade e CEP), com os espaços das pontas removidos no construtor (`strip`): " Rua das Flores " vira "Rua das Flores";
   - número em `String`, porque "S/N" existe;
   - CEP em `String` (muitos começam com zero), com 8 dígitos e guardado sem hífen: o construtor normaliza "01310-100" para "01310100";
