@@ -351,7 +351,12 @@ Um padrão entra quando resolve um problema real do projeto, não por antecipaç
   - RASCUNHO → ATIVO e INATIVO → ATIVO exigem proprietários definidos. A soma 100 é invariante da lista (value object), então um imóvel ativo nunca tem soma diferente de 100.
   - RASCUNHO → INATIVO descarta o cadastro. Não há exclusão física de imóvel nem `DELETE` na API. Um estado `DESCARTADO`, sem volta, fica para quando houver necessidade.
   - Inativar é recusado com `ocupacao` LOCADO (implementado na etapa 5, com o listener `contratoativado`). Eventos de Contratos não são recusados, então INATIVO + LOCADO pode surgir por atraso de evento e é tolerado.
-- **Proprietários:** com percentual de posse em quatro casas decimais (`numeric(7,4)`); a soma deve ser exatamente 100, e um valor com mais casas é recusado, não arredondado. O `PUT` substitui a lista inteira. O `pessoaId` não é validado até a etapa 4. A partir dela, é conferido numa cópia local de `pessoas.v1` (só `id`, `tenant_id` e `versao`), que só o consumidor escreve e para a qual os proprietários não têm foreign key.
+- **Proprietários:**
+  - lista num value object, com percentual de posse em quatro casas decimais (`numeric(7,4)`); um valor com mais casas é recusado, não arredondado;
+  - invariantes da lista: não vazia, `pessoaId` e percentual obrigatórios, cada percentual > 0, soma exatamente 100 e cada `pessoaId` uma única vez (repetido costuma ser erro de seleção e esconde outro proprietário). Com todos > 0 e soma 100, nenhum passa de 100, então não há checagem de ≤ 100;
+  - "sem proprietários" é o campo nulo no `Imovel`, não uma lista vazia: o imóvel nasce sem eles, e a ativação confere se o campo está preenchido;
+  - o `PUT` substitui a lista inteira. Lista vazia é recusada, então não há como remover todos os proprietários;
+  - o `pessoaId` não é validado até a etapa 4. A partir dela, é conferido numa cópia local de `pessoas.v1` (só `id`, `tenant_id` e `versao`), que só o consumidor escreve e para a qual os proprietários não têm foreign key.
 - **Mídia:** URL pré-assinada do MinIO, upload direto pelo front, confirmação, e miniaturas geradas de forma assíncrona. Fica para depois do marco, numa etapa própria, porque não faz parte do fluxo do marco.
 - **Busca:** Postgres (índices, `pg_trgm`, PostGIS). OpenSearch é uma evolução opcional.
 - **Venda de imóvel alugado:** o inquilino tem direito de preferência (Lei 8.245/91, arts. 27 e 28; prazo de 30 dias).
