@@ -333,8 +333,9 @@ Um padrão entra quando resolve um problema real do projeto, não por antecipaç
 - **Características mínimas:** quartos, suítes, banheiros e vagas, obrigatórios e ≥ 0; as suítes contam entre os quartos (suítes ≤ quartos). Área útil opcional, > 0 quando informada. O conjunto cresce quando a busca ou os portais pedirem.
 - **Endereço:**
   - logradouro, número, bairro, cidade, UF e CEP obrigatórios; complemento opcional;
+  - textos em `String` (logradouro, número, complemento, bairro, cidade e CEP), com os espaços das pontas removidos no construtor (`strip`): " Rua das Flores " vira "Rua das Flores";
   - número em `String`, porque "S/N" existe;
-  - CEP com 8 dígitos, guardado sem hífen: o construtor normaliza "01310-100" para "01310100";
+  - CEP em `String` (muitos começam com zero), com 8 dígitos e guardado sem hífen: o construtor normaliza "01310-100" para "01310100";
   - UF como enum com as 27 siglas;
   - latitude e longitude opcionais, mas sempre em par, em `Double` (o PostGIS guarda `float8`; a proibição de `double` vale para dinheiro). `NaN` e infinito são recusados. Imóvel sem coordenadas fica fora da busca geográfica.
 - **Invariante × completude:**
