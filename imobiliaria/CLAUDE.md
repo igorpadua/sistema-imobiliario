@@ -335,7 +335,7 @@ Um padrão entra quando resolve um problema real do projeto, não por antecipaç
   - logradouro, número, bairro, cidade, UF e CEP obrigatórios; complemento opcional, e vazio ou só com espaços vira `null` (uma única forma de "sem complemento");
   - textos em `String` (logradouro, número, complemento, bairro, cidade e CEP), com os espaços das pontas removidos no construtor (`strip`): " Rua das Flores " vira "Rua das Flores";
   - número em `String`, porque "S/N" existe;
-  - CEP em `String` (muitos começam com zero), com 8 dígitos e guardado sem hífen: o construtor normaliza "01310-100" para "01310100";
+  - CEP em `String` (muitos começam com zero), com 8 dígitos e guardado sem hífen. A entrada aceita "01310100" ou "01310-100", com o hífen só entre o 5º e o 6º dígito ("0131-0100" é recusado), e o construtor normaliza para "01310100";
   - UF como enum com as 27 siglas;
   - latitude e longitude opcionais, mas sempre em par, em `Double` (o PostGIS guarda `float8`; a proibição de `double` vale para dinheiro). `NaN` e infinito são recusados. Imóvel sem coordenadas fica fora da busca geográfica.
 - **Invariante × completude:**
