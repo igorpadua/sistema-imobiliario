@@ -13,15 +13,17 @@ public record Proprietario(UUID pessoaId, BigDecimal percentual) {
         }
 
         if (percentual == null) {
-            throw new RegraDeDominioException("Não é permitido percentual nulo.");
+            throw new RegraDeDominioException("O campo percentual é obrigatório.");
         }
 
         if (percentual.signum() != 1) {
-            throw new RegraDeDominioException("Só é aceito percentual acima de 0.");
+            throw new RegraDeDominioException("Percentual deve ser maior que zero (informado: "
+                    + percentual.toPlainString() + ").");
         }
 
         if (percentual.stripTrailingZeros().scale() > 4) {
-            throw new RegraDeDominioException("Percentual pode ter no máximo 4 casas.");
+            throw new RegraDeDominioException("Percentual deve ter no máximo 4 casas decimais significativas (informado: "
+                    + percentual.toPlainString() + ").");
         }
 
         percentual = percentual.setScale(4, RoundingMode.UNNECESSARY);

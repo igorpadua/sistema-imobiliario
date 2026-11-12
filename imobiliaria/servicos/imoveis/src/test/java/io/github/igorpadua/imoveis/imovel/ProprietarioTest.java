@@ -24,36 +24,36 @@ class ProprietarioTest {
                 .isInstanceOf(RegraDeDominioException.class);
     }
 
-    @ParameterizedTest(name = "Percentual {0} rejeita valor zero")
+    @ParameterizedTest(name = "Percentual {0} (zero) é recusado")
     @CsvSource({"0", "0.0000", "0.00"})
     void recusaPercentualZero(String percentual) {
         assertThatThrownBy(() -> proprietarioComPercentual(percentual))
                 .isInstanceOf(RegraDeDominioException.class);
     }
 
-    @ParameterizedTest(name = "Percentual {0} negativo é reijetado")
+    @ParameterizedTest(name = "Percentual {0} (negativo) é recusado")
     @CsvSource({"-50", "-0.0001"})
     void recusaPercentualNegativo(String percentual) {
         assertThatThrownBy(() -> proprietarioComPercentual(percentual))
                 .isInstanceOf(RegraDeDominioException.class);
     }
 
-    @ParameterizedTest(name = "Percentual {0} é aceito")
+    @ParameterizedTest(name = "Percentual {0} é aceito e guardado como {1}")
     @CsvSource({"0.0001, 0.0001", "100.00, 100.0000", "1, 1.0000"})
     void aceitaPercentualPositivo(String percentual, String percentualEsperado) {
         assertThat(proprietarioComPercentual(percentual).percentual()).isEqualTo(percentualEsperado);
     }
 
-    @ParameterizedTest(name = "Percentual {0} com mais de quatro casas é recusado")
+    @ParameterizedTest(name = "Percentual {0} com mais de quatro casas significativas é recusado")
     @CsvSource({"33.33331", "0.00001"})
-    void recusaPercentualComMaisQuatroCasas(String percentual) {
+    void recusaPercentualComMaisDeQuatroCasas(String percentual) {
         assertThatThrownBy(() -> proprietarioComPercentual(percentual))
                 .isInstanceOf(RegraDeDominioException.class);
     }
 
-    @ParameterizedTest(name = "Percentual {0} aceita zeros à direita além e removendo {1}")
+    @ParameterizedTest(name = "Percentual {0} tem os zeros à direita ignorados e é guardado como {1}")
     @CsvSource({"33.33330, 33.3333", "100.00000, 100.0000"})
-    void aceitaPercentualZeroADireitaAlem(String percentual, String percentualEsperado) {
+    void aceitaPercentualComZerosADireitaAlemDaQuartaCasa(String percentual, String percentualEsperado) {
         assertThat(proprietarioComPercentual(percentual).percentual()).isEqualTo(percentualEsperado);
     }
 
