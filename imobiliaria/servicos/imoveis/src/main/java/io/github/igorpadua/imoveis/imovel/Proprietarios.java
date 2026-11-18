@@ -14,11 +14,11 @@ public record Proprietarios(List<Proprietario> proprietarios) {
         }
 
         if (proprietarios.isEmpty()) {
-            throw new RegraDeDominioException("O campo proprietários deve ter ao menos um proprietários.");
+            throw new RegraDeDominioException("A lista de proprietários deve ter ao menos um proprietário.");
         }
 
         if (proprietarios.stream().anyMatch(Objects::isNull)) {
-            throw new RegraDeDominioException("O campo proprietários não pode conter itens nulos.");
+            throw new RegraDeDominioException("A lista de proprietários não pode conter itens nulos.");
         }
 
         proprietarios = List.copyOf(proprietarios);
@@ -29,7 +29,7 @@ public record Proprietarios(List<Proprietario> proprietarios) {
                 .count();
 
         if (quantidadeDePessoasDistintas != proprietarios.size()) {
-            throw new RegraDeDominioException("Não é permitido proprietários repetidos na lista.");
+            throw new RegraDeDominioException("Cada pessoa pode aparecer uma única vez na lista de proprietários.");
         }
 
         BigDecimal somaPercentuais = proprietarios.stream()
@@ -37,7 +37,8 @@ public record Proprietarios(List<Proprietario> proprietarios) {
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
         if (somaPercentuais.compareTo(CEM) != 0) {
-            throw new RegraDeDominioException("A soma dos proprietários deve dar 100%.");
+            throw new RegraDeDominioException("A soma dos percentuais dos proprietários deve ser exatamente 100 (informada: "
+                    + somaPercentuais.toPlainString() + ").");
         }
 
     }

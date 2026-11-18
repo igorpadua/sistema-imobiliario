@@ -13,13 +13,13 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class ProprietariosTest {
 
-    private static final UUID IDPROPRIETARIO1 = UUID.randomUUID();
+    private static final UUID PESSOA_A = UUID.randomUUID();
 
     @Test
     void recusaListaVazia() {
         assertThatThrownBy(() -> proprietariosComPercentual(List.of()))
                 .isInstanceOf(RegraDeDominioException.class)
-                .hasMessageContaining("O campo proprietários deve ter ao menos um proprietários.");
+                .hasMessageContaining("A lista de proprietários deve ter ao menos um proprietário.");
     }
 
     @Test
@@ -40,14 +40,14 @@ class ProprietariosTest {
     }
 
     @Test
-    void aceitaProprietarioComCemPorcento() {
-        List<Proprietario> listaProprietario = List.of(new Proprietario(IDPROPRIETARIO1, paraBigDecimal("100")));
+    void aceitaUmUnicoProprietarioComCemPorCento() {
+        List<Proprietario> listaProprietario = List.of(new Proprietario(PESSOA_A, paraBigDecimal("100")));
         Proprietarios proprietarios = new Proprietarios(listaProprietario);
         assertThat(proprietarios.proprietarios()).containsExactlyElementsOf(listaProprietario);
     }
 
     @Test
-    void aceitaProprietarioComSomaExata() {
+    void aceitaSomaExataComQuatroCasas() {
         List<Proprietario> listaProprietario = List.of(
                 new Proprietario(UUID.randomUUID(), paraBigDecimal("33.3333")),
                 new Proprietario(UUID.randomUUID(), paraBigDecimal("33.3333")),
@@ -70,10 +70,10 @@ class ProprietariosTest {
     }
 
     @Test
-    void recusaPessoaIdRepetida() {
+    void recusaPessoaIdRepetido() {
         List<Proprietario> proprietariosRepetidos = Arrays.asList(
-                new Proprietario(IDPROPRIETARIO1, new BigDecimal("50")),
-                new Proprietario(IDPROPRIETARIO1, new BigDecimal("50"))
+                new Proprietario(PESSOA_A, new BigDecimal("50")),
+                new Proprietario(PESSOA_A, new BigDecimal("50"))
         );
 
         assertThatThrownBy(() -> new Proprietarios(proprietariosRepetidos))
@@ -81,11 +81,11 @@ class ProprietariosTest {
     }
 
     @Test
-    void recusaPessoaIdRepetidaForaDeSequencia() {
+    void recusaPessoaIdRepetidoForaDeSequencia() {
         List<Proprietario> proprietariosRepetidos = Arrays.asList(
-                new Proprietario(IDPROPRIETARIO1, new BigDecimal("30")),
+                new Proprietario(PESSOA_A, new BigDecimal("30")),
                 new Proprietario(UUID.randomUUID(), new BigDecimal("40")),
-                new Proprietario(IDPROPRIETARIO1, new BigDecimal("30"))
+                new Proprietario(PESSOA_A, new BigDecimal("30"))
         );
 
         assertThatThrownBy(() -> new Proprietarios(proprietariosRepetidos))
@@ -93,20 +93,20 @@ class ProprietariosTest {
     }
 
     @Test
-    void naoPermiteFazerAlteracoesNoValueObjectDepoisDaCriacao() {
+    void alterarAListaOriginalDepoisDaCriacaoNaoAlteraOValueObject() {
         List<Proprietario> listaProprietarios = new ArrayList<>(List.of(
-                new Proprietario(IDPROPRIETARIO1, new BigDecimal("100"))
+                new Proprietario(PESSOA_A, new BigDecimal("100"))
         ));
         Proprietarios proprietarios = new Proprietarios(listaProprietarios);
         listaProprietarios.clear();
 
-        assertThat(proprietarios.proprietarios()).containsExactly(new Proprietario(IDPROPRIETARIO1, paraBigDecimal("100")));
+        assertThat(proprietarios.proprietarios()).containsExactly(new Proprietario(PESSOA_A, paraBigDecimal("100")));
     }
 
     @Test
-    void naoPermiteFazerAlteracoesAoValueObject() {
+    void listaDevolvidaNaoAceitaAlteracao() {
         List<Proprietario> listaProprietarios = new ArrayList<>(List.of(
-                new Proprietario(IDPROPRIETARIO1, new BigDecimal("100"))
+                new Proprietario(PESSOA_A, new BigDecimal("100"))
         ));
         Proprietarios proprietarios = new Proprietarios(listaProprietarios);
         assertThatThrownBy(() -> proprietarios.proprietarios().add(new Proprietario(UUID.randomUUID(), paraBigDecimal("50"))))
@@ -115,7 +115,7 @@ class ProprietariosTest {
 
     @Test
     void aceitaListaImutavelNaEntrada() {
-        Proprietario proprietario = new Proprietario(IDPROPRIETARIO1, paraBigDecimal("100"));
+        Proprietario proprietario = new Proprietario(PESSOA_A, paraBigDecimal("100"));
         Proprietarios proprietarios = new Proprietarios(List.of(proprietario));
 
         assertThat(proprietarios.proprietarios()).containsExactly(proprietario);
