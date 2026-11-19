@@ -330,7 +330,7 @@ Um padrão entra quando resolve um problema real do projeto, não por antecipaç
 ### Imóveis
 
 - **Agregado `Imovel`:** código legível único por tenant (gerado por uma tabela de sequência por tenant), tipo, uso, endereço (value object com latitude e longitude), características, matrícula, inscrição de IPTU.
-- **Características mínimas:** quartos, suítes, banheiros e vagas, obrigatórios e ≥ 0; as suítes contam entre os quartos (suítes ≤ quartos). Área útil opcional, em m², > 0 quando informada, em `BigDecimal` com no máximo 2 casas decimais significativas (`numeric(10,2)`): casas a mais são recusadas, não arredondadas, zeros à direita não contam e o valor é guardado sempre com escala 2 (`72.5` vira `72.50`). O conjunto cresce quando a busca ou os portais pedirem.
+- **Características mínimas:** quartos, suítes, banheiros e vagas, obrigatórios e ≥ 0; as suítes contam entre os quartos (suítes ≤ quartos). Área útil opcional, em m², > 0 quando informada, em `BigDecimal` com no máximo 2 casas decimais significativas (`numeric(10,2)`): casas a mais são recusadas, não arredondadas, zeros à direita não contam e o valor é guardado sempre com escala 2 (`72.5` vira `72.50`). A área vai até 99.999.999,99, o limite da coluna, e acima disso é recusada no domínio para não virar erro 500 no `INSERT`. O conjunto cresce quando a busca ou os portais pedirem.
 - **Endereço:**
   - logradouro, número, bairro, cidade, UF e CEP obrigatórios; complemento opcional, e vazio ou só com espaços vira `null` (uma única forma de "sem complemento");
   - textos em `String` (logradouro, número, complemento, bairro, cidade e CEP), com os espaços das pontas removidos no construtor (`strip`): " Rua das Flores " vira "Rua das Flores";
