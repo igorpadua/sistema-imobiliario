@@ -330,6 +330,11 @@ Um padrão entra quando resolve um problema real do projeto, não por antecipaç
 ### Imóveis
 
 - **Agregado `Imovel`:** código legível único por tenant (gerado por uma tabela de sequência por tenant), tipo, uso, endereço (value object com latitude e longitude), características, matrícula, inscrição de IPTU.
+- **Tipo e uso:** dois enums separados, porque uma casa pode ter uso comercial.
+  - tipo: CASA, APARTAMENTO, SALA_COMERCIAL, TERRENO. Um só por imóvel, porque descreve o que ele é fisicamente;
+  - uso: RESIDENCIAL, COMERCIAL, MISTO. `MISTO` cobre o imóvel que serve aos dois (sobrado com loja no térreo). Com dois usos, ele equivale a um conjunto e custa uma coluna; se surgir um terceiro uso, trocar por um conjunto (`Set<Uso>`);
+  - o uso diz para que o imóvel serve. O regime da Lei do Inquilinato (residencial ou não residencial) vem da finalidade do contrato;
+  - as listas crescem quando houver requisito real (ex.: loja, galpão, chácara).
 - **Características mínimas:** quartos, suítes, banheiros e vagas, obrigatórios e ≥ 0; as suítes contam entre os quartos (suítes ≤ quartos). Área útil opcional, em m², > 0 quando informada, em `BigDecimal` com no máximo 2 casas decimais significativas (`numeric(10,2)`): casas a mais são recusadas, não arredondadas, zeros à direita não contam e o valor é guardado sempre com escala 2 (`72.5` vira `72.50`). A área vai até 99.999.999,99, o limite da coluna, e acima disso é recusada no domínio para não virar erro 500 no `INSERT`. O conjunto cresce quando a busca ou os portais pedirem.
 - **Endereço:**
   - logradouro, número, bairro, cidade, UF e CEP obrigatórios; complemento opcional, e vazio ou só com espaços vira `null` (uma única forma de "sem complemento");
