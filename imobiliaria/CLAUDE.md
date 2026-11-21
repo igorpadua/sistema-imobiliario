@@ -335,6 +335,10 @@ Um padrão entra quando resolve um problema real do projeto, não por antecipaç
   - uso: RESIDENCIAL, COMERCIAL, MISTO. `MISTO` cobre o imóvel que serve aos dois (sobrado com loja no térreo). Com dois usos, ele equivale a um conjunto e custa uma coluna; se surgir um terceiro uso, trocar por um conjunto (`Set<Uso>`);
   - o uso diz para que o imóvel serve. O regime da Lei do Inquilinato (residencial ou não residencial) vem da finalidade do contrato;
   - as listas crescem quando houver requisito real (ex.: loja, galpão, chácara).
+- **Campos exigidos na criação:**
+  - obrigatórios na fábrica: código legível (vem pronto da sequência por tenant), tipo, uso, endereço e características. Sem eles o imóvel não entra na busca nem nas ofertas;
+  - opcionais: matrícula e inscrição de IPTU, porque o corretor costuma cadastrar antes de ter os documentos. Vazio ou só com espaços vira `null`, como no complemento. Continuam opcionais na ativação até haver requisito real (ex.: a venda);
+  - proprietários: ausentes (campo nulo) na criação, exigidos na ativação.
 - **Características mínimas:** quartos, suítes, banheiros e vagas, obrigatórios e ≥ 0; as suítes contam entre os quartos (suítes ≤ quartos). Área útil opcional, em m², > 0 quando informada, em `BigDecimal` com no máximo 2 casas decimais significativas (`numeric(10,2)`): casas a mais são recusadas, não arredondadas, zeros à direita não contam e o valor é guardado sempre com escala 2 (`72.5` vira `72.50`). A área vai até 99.999.999,99, o limite da coluna, e acima disso é recusada no domínio para não virar erro 500 no `INSERT`. O conjunto cresce quando a busca ou os portais pedirem.
 - **Endereço:**
   - logradouro, número, bairro, cidade, UF e CEP obrigatórios; complemento opcional, e vazio ou só com espaços vira `null` (uma única forma de "sem complemento");
