@@ -40,7 +40,7 @@ SaaS multi-tenant para imobiliárias que alugam e vendem imóveis de terceiros: 
 
 **Objetivos de aprendizado** (priorize explicações e revisões ligadas a eles): microsserviços com eventos (Kafka, Avro, Schema Registry); consistência eventual (outbox, consumidores idempotentes, sagas coreografadas, eventos fora de ordem); multi-tenant com RLS; OIDC (Keycloak) e BFF; portas e adaptadores (bancos via API e CNAB); domínio rico com regras legais reais (Lei do Inquilinato, LGPD); Testcontainers e ArchUnit; padrões de projeto onde resolvem problema real; package by feature com vertical slice.
 
-**Fora do escopo por enquanto:** nuvem e Kubernetes, bancos reais (há um banco fake), transmissão à Receita, assinatura eletrônica real, front-end completo.
+**Fora do escopo por enquanto:** nuvem e Kubernetes, bancos reais (há um banco fake), transmissão à Receita, assinatura eletrônica real, front-end completo (virá em Angular, depois do marco).
 
 ## Stack e repositório (o quê)
 
