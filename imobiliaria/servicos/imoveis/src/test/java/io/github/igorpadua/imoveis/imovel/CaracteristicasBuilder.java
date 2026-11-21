@@ -19,13 +19,13 @@ class CaracteristicasBuilder {
         return this;
     }
 
-    CaracteristicasBuilder comSuites(int suite) {
-        this.suites = suite;
+    CaracteristicasBuilder comSuites(int suites) {
+        this.suites = suites;
         return this;
     }
 
-    CaracteristicasBuilder comBanheiros(int banheiro) {
-        this.banheiros = banheiro;
+    CaracteristicasBuilder comBanheiros(int banheiros) {
+        this.banheiros = banheiros;
         return this;
     }
 

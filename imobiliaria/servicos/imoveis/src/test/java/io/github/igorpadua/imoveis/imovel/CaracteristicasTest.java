@@ -13,118 +13,118 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 class CaracteristicasTest {
 
     @Test
-    void aceitaQuartoZerado() {
+    void aceitaZeroQuartosComZeroSuites() {
         assertThat(umaCaracteristica().comSuites(0).comQuartos(0).build().quartos()).isZero();
     }
 
     @Test
-    void aceitaSuiteZerada() {
+    void aceitaZeroSuites() {
         assertThat(umaCaracteristica().comSuites(0).build().suites()).isZero();
     }
 
     @Test
-    void aceitaBanheiroZerado() {
+    void aceitaZeroBanheiros() {
         assertThat(umaCaracteristica().comBanheiros(0).build().banheiros()).isZero();
     }
 
     @Test
-    void aceitaVagasZerado() {
+    void aceitaZeroVagas() {
         assertThat(umaCaracteristica().comVagas(0).build().vagas()).isZero();
     }
 
     @Test
-    void recusaQuartosNegativo() {
+    void recusaQuartosNegativos() {
         assertThatThrownBy(() -> umaCaracteristica().comQuartos(-1).build())
                 .isInstanceOf(RegraDeDominioException.class)
-                .hasMessageContaining("não pode ser negativo.");
+                .hasMessageContaining("Quantidade de quartos não pode ser negativa");
     }
 
     @Test
-    void recusaSuiteNegativa() {
+    void recusaSuitesNegativas() {
         assertThatThrownBy(() -> umaCaracteristica().comSuites(-1).build())
                 .isInstanceOf(RegraDeDominioException.class);
     }
 
     @Test
-    void recusaBanheiroNegativo() {
+    void recusaBanheirosNegativos() {
         assertThatThrownBy(() -> umaCaracteristica().comBanheiros(-1).build())
                 .isInstanceOf(RegraDeDominioException.class);
     }
 
     @Test
-    void recusaVagasNegativo() {
+    void recusaVagasNegativas() {
         assertThatThrownBy(() -> umaCaracteristica().comVagas(-1).build())
                 .isInstanceOf(RegraDeDominioException.class);
     }
 
     @Test
-    void recusaSuiteMaiorQueQuarto() {
+    void recusaSuitesAcimaDosQuartos() {
         assertThatThrownBy(() -> umaCaracteristica().comQuartos(1).comSuites(2).build())
                 .isInstanceOf(RegraDeDominioException.class);
     }
 
     @Test
-    void aceitaSuitesIguaisAoQuartos() {
+    void aceitaSuitesIguaisAosQuartos() {
         assertThat(umaCaracteristica().comSuites(1).comQuartos(1).build().suites()).isEqualTo(1);
     }
 
     @Test
-    void aceitaSuitesAbaixoDoQuarto() {
+    void aceitaSuitesAbaixoDosQuartos() {
         assertThat(umaCaracteristica().comSuites(1).comQuartos(2).build().suites()).isEqualTo(1);
     }
 
     @Test
-    void aceitaAreaNula() {
+    void aceitaAreaUtilNula() {
         assertThat(umaCaracteristica().comAreaUtil(null).build().areaUtil()).isNull();
     }
 
-    @ParameterizedTest(name = "Área {0} zero é recusado")
+    @ParameterizedTest(name = "Área útil {0} (zero) é recusada")
     @CsvSource({"0", "0.0"})
-    void recusaAreaZero(String area) {
-        assertThatThrownBy(() -> umaCaracteristica().comAreaUtil(area).build())
-                .isInstanceOf(RegraDeDominioException.class);
-    }
-
-    @ParameterizedTest(name = "Área {0} negativa é recusado")
-    @CsvSource({"-0.01", "-50.0"})
-    void recusaAreaNegativa(String area) {
-        assertThatThrownBy(() -> umaCaracteristica().comAreaUtil(area).build())
-                .isInstanceOf(RegraDeDominioException.class);
-    }
-
-    @Test
-    void aceitaAMenorAreaPossivel() {
-        assertThat(umaCaracteristica().comAreaUtil("0.01").build().areaUtil()).isEqualTo(new BigDecimal("0.01"));
-    }
-
-    @Test
-    void aceitaAMaiorAreaPossivel() {
-        assertThat(umaCaracteristica().comAreaUtil("99999999.99").build().areaUtil()).isEqualTo(new BigDecimal("99999999.99"));
-    }
-
-    @Test
-    void recusaAreaAcimaLimite() {
-        assertThatThrownBy(() -> umaCaracteristica().comAreaUtil("100000000.0").build())
-                .isInstanceOf(RegraDeDominioException.class);
-    }
-
-    @ParameterizedTest(name = "Área {0} recusa mais que duas casas decimais significativas")
-    @CsvSource({"72.501", "0.001"})
-    void recusaMaisQueDuasCasasDecimaisSignificativas(String areaUtil) {
+    void recusaAreaUtilZero(String areaUtil) {
         assertThatThrownBy(() -> umaCaracteristica().comAreaUtil(areaUtil).build())
                 .isInstanceOf(RegraDeDominioException.class);
     }
 
-    @ParameterizedTest(name = "Área aceita zeros a direita recebe {0} o esperado é {1}")
-    @CsvSource({"72.500, 72.50", "100.000, 100.00"})
-    void aceitaZerosADireita(String area, String esperado) {
-        assertThat(umaCaracteristica().comAreaUtil(area).build().areaUtil()).isEqualTo(new BigDecimal(esperado));
+    @ParameterizedTest(name = "Área útil {0} (negativa) é recusada")
+    @CsvSource({"-0.01", "-50.0"})
+    void recusaAreaUtilNegativa(String areaUtil) {
+        assertThatThrownBy(() -> umaCaracteristica().comAreaUtil(areaUtil).build())
+                .isInstanceOf(RegraDeDominioException.class);
     }
 
-    @ParameterizedTest(name = "Área sempre {0} sempre guarda duas casas decimais")
+    @Test
+    void aceitaAMenorAreaUtilPossivel() {
+        assertThat(umaCaracteristica().comAreaUtil("0.01").build().areaUtil()).isEqualTo(new BigDecimal("0.01"));
+    }
+
+    @Test
+    void aceitaAMaiorAreaUtilQueCabeNaColuna() {
+        assertThat(umaCaracteristica().comAreaUtil("99999999.99").build().areaUtil()).isEqualTo(new BigDecimal("99999999.99"));
+    }
+
+    @Test
+    void recusaAreaUtilAcimaDoLimiteDaColuna() {
+        assertThatThrownBy(() -> umaCaracteristica().comAreaUtil("100000000.0").build())
+                .isInstanceOf(RegraDeDominioException.class);
+    }
+
+    @ParameterizedTest(name = "Área útil {0} com mais de duas casas significativas é recusada")
+    @CsvSource({"72.501", "0.001"})
+    void recusaAreaUtilComMaisDeDuasCasas(String areaUtil) {
+        assertThatThrownBy(() -> umaCaracteristica().comAreaUtil(areaUtil).build())
+                .isInstanceOf(RegraDeDominioException.class);
+    }
+
+    @ParameterizedTest(name = "Área útil {0} tem os zeros à direita ignorados e é guardada como {1}")
+    @CsvSource({"72.500, 72.50", "100.000, 100.00"})
+    void aceitaAreaUtilComZerosADireitaAlemDaSegundaCasa(String areaUtil, String areaUtilEsperada) {
+        assertThat(umaCaracteristica().comAreaUtil(areaUtil).build().areaUtil()).isEqualTo(new BigDecimal(areaUtilEsperada));
+    }
+
+    @ParameterizedTest(name = "Área útil {0} é guardada com escala 2 como {1}")
     @CsvSource({"72, 72.00", "72.5, 72.50"})
-    void sempreGuardaDuasCasasDecimais(String area, String esperado) {
-        assertThat(umaCaracteristica().comAreaUtil(area).build().areaUtil()).isEqualTo(new BigDecimal(esperado));
+    void guardaAreaUtilSempreComEscalaDois(String areaUtil, String areaUtilEsperada) {
+        assertThat(umaCaracteristica().comAreaUtil(areaUtil).build().areaUtil()).isEqualTo(new BigDecimal(areaUtilEsperada));
     }
 
     @Test

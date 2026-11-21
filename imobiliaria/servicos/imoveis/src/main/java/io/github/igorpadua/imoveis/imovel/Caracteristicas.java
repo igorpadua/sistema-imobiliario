@@ -9,27 +9,29 @@ public record Caracteristicas(int quartos, int suites, int banheiros, int vagas,
 
     public Caracteristicas {
 
-        recusaNegativo(quartos, "Quartos");
-        recusaNegativo(suites, "Suíte");
-        recusaNegativo(banheiros, "Banheiro");
-        recusaNegativo(vagas, "Vaga");
+        recusaNegativo(quartos, "quartos");
+        recusaNegativo(suites, "suítes");
+        recusaNegativo(banheiros, "banheiros");
+        recusaNegativo(vagas, "vagas");
 
         if (suites > quartos) {
-            throw new RegraDeDominioException("A quantidade de suítes não pode ser maior que a quantidade de quartos.");
+            throw new RegraDeDominioException("Quantidade de suítes não pode ser maior que a de quartos (suítes: "
+                    + suites + ", quartos: " + quartos + ").");
         }
 
         if (areaUtil != null) {
             if (areaUtil.compareTo(BigDecimal.ZERO) <= 0) {
-                throw new RegraDeDominioException("A área não pode ser zero ou negativa.");
-            }
-
-            if (areaUtil.compareTo(AREA_MAXIMA) > 0) {
-                throw new RegraDeDominioException("A área não pode ser maior que " + AREA_MAXIMA.toPlainString() + " (informado: "
+                throw new RegraDeDominioException("Área útil deve ser maior que zero (informada: "
                         + areaUtil.toPlainString() + ").");
             }
 
+            if (areaUtil.compareTo(AREA_MAXIMA) > 0) {
+                throw new RegraDeDominioException("Área útil deve ser no máximo " + AREA_MAXIMA.toPlainString()
+                        + " (informada: " + areaUtil.toPlainString() + ").");
+            }
+
             if (areaUtil.stripTrailingZeros().scale() > 2) {
-                throw new RegraDeDominioException("Área deve ter no máximo 2 casas decimais significativas (informado: "
+                throw new RegraDeDominioException("Área útil deve ter no máximo 2 casas decimais significativas (informada: "
                         + areaUtil.toPlainString() + ").");
             }
 
@@ -40,7 +42,8 @@ public record Caracteristicas(int quartos, int suites, int banheiros, int vagas,
 
     private static void recusaNegativo(int valor, String campo) {
         if (valor < 0) {
-            throw new RegraDeDominioException("O campo " + campo + " não pode ser negativo.");
+            throw new RegraDeDominioException("Quantidade de " + campo + " não pode ser negativa (informada: "
+                    + valor + ").");
         }
     }
 
