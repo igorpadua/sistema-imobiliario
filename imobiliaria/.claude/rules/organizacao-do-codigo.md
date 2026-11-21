@@ -34,6 +34,10 @@ servicos/imoveis/
   - leitura pode ir direto ao banco, e quem protege é o RLS, já que o `@TenantId` não atua em SQL puro.
 - **O agregado é a entidade JPA.** As anotações de JPA e Hibernate (`@Entity`, `@TenantId`, `@Version`, `@Embeddable`) ficam no próprio agregado, sem modelo de persistência separado. Componentes Spring (`@Component`, `@Service`, injeção de dependência) não entram em agregados nem em value objects: quem os cria é o Hibernate ou um `new`, não o Spring.
 - **Tipos:** value objects e eventos são records (um value object persistido vira `@Embeddable`); estados e comandos são sealed interfaces.
+- **Ausência de valor:**
+  - campo ou componente que pode faltar fica `null`, e o acessor devolve `null` (ex.: `complemento`, `matricula`, `proprietarios` antes da ativação);
+  - `Optional` só como retorno de consulta que pode não encontrar nada (ex.: `findById`);
+  - motivo: o javadoc do `Optional` o destina a tipo de retorno, não a campo nem parâmetro, e num record o acessor tem o tipo do componente, então devolver `Optional` exigiria um campo `Optional`.
 - **Portas e adaptadores (hexagonal) só onde há várias implementações reais:**
   - gateway bancário (API REST, CNAB 240, CNAB 400);
   - provedor de assinatura eletrônica;
