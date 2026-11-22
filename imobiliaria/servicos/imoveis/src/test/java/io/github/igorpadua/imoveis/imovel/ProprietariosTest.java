@@ -1,15 +1,20 @@
 package io.github.igorpadua.imoveis.imovel;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.params.provider.Arguments.arguments;
 
 class ProprietariosTest {
 
@@ -39,34 +44,40 @@ class ProprietariosTest {
                 .isInstanceOf(RegraDeDominioException.class);
     }
 
-    @Test
-    void aceitaUmUnicoProprietarioComCemPorCento() {
-        List<Proprietario> listaProprietario = List.of(new Proprietario(PESSOA_A, paraBigDecimal("100")));
-        Proprietarios proprietarios = new Proprietarios(listaProprietario);
-        assertThat(proprietarios.proprietarios()).containsExactlyElementsOf(listaProprietario);
+    @ParameterizedTest(name = "Percentuais {0} somam 100 e são aceitos")
+    @MethodSource("percentuaisQueSomamCem")
+    void aceitaPercentuaisQueSomamCem(List<String> percentuais) {
+        List<Proprietario> listaProprietarios = listaComPercentuais(percentuais);
+
+        Proprietarios proprietarios = new Proprietarios(listaProprietarios);
+
+        assertThat(proprietarios.proprietarios()).containsExactlyElementsOf(listaProprietarios);
     }
 
-    @Test
-    void aceitaSomaExataComQuatroCasas() {
-        List<Proprietario> listaProprietario = List.of(
-                new Proprietario(UUID.randomUUID(), paraBigDecimal("33.3333")),
-                new Proprietario(UUID.randomUUID(), paraBigDecimal("33.3333")),
-                new Proprietario(UUID.randomUUID(), paraBigDecimal("33.3334"))
+    static Stream<List<String>> percentuaisQueSomamCem() {
+        return Stream.of(
+                List.of("100"),
+                List.of("50", "50"),
+                List.of("33.33", "33.33", "33.34"),
+                List.of("33.3333", "33.3333", "33.3334")
         );
-        Proprietarios proprietarios = new Proprietarios(listaProprietario);
-        assertThat(proprietarios.proprietarios()).containsExactlyElementsOf(listaProprietario);
     }
 
-    @Test
-    void recusaSomaAbaixoDeCem() {
-        assertThatThrownBy(() -> proprietariosComPercentual(List.of("33.3333", "33.3333", "33.3333")))
-                .isInstanceOf(RegraDeDominioException.class);
+    @ParameterizedTest(name = "Percentuais {0} somam {1} e são recusados")
+    @MethodSource("percentuaisQueNaoSomamCem")
+    void recusaPercentuaisQueNaoSomamCem(List<String> percentuais, String somaInformada) {
+        assertThatThrownBy(() -> proprietariosComPercentual(percentuais))
+                .isInstanceOf(RegraDeDominioException.class)
+                .hasMessageContaining("(informada: " + somaInformada + ")");
     }
 
-    @Test
-    void recusaSomaAcimaDeCem() {
-        assertThatThrownBy(() -> proprietariosComPercentual(List.of("50.0001", "50")))
-                .isInstanceOf(RegraDeDominioException.class);
+    static Stream<Arguments> percentuaisQueNaoSomamCem() {
+        return Stream.of(
+                arguments(List.of("33.33", "33.33", "33.33"), "99.9900"),
+                arguments(List.of("33.3333", "33.3333", "33.3333"), "99.9999"),
+                arguments(List.of("50.0001", "50"), "100.0001"),
+                arguments(List.of("60", "50"), "110.0000")
+        );
     }
 
     @Test
@@ -122,11 +133,13 @@ class ProprietariosTest {
     }
 
     private static Proprietarios proprietariosComPercentual(List<String> percentuais) {
-        return new Proprietarios(
-                percentuais.stream().map( percentual ->
-                        new Proprietario(UUID.randomUUID(), paraBigDecimal(percentual))
-                ).toList()
-        );
+        return new Proprietarios(listaComPercentuais(percentuais));
+    }
+
+    private static List<Proprietario> listaComPercentuais(List<String> percentuais) {
+        return percentuais.stream()
+                .map(percentual -> new Proprietario(UUID.randomUUID(), paraBigDecimal(percentual)))
+                .toList();
     }
 
     private static BigDecimal paraBigDecimal(String valor) {
