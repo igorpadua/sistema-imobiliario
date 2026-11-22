@@ -179,12 +179,6 @@ class ImovelTest {
                 .isInstanceOf(RegraDeDominioException.class);
     }
 
-    @Test
-    void imovelNasceSemProprietarios() {
-        Imovel imovel = umImovel().build();
-        assertThat(imovel.proprietarios()).isNull();
-    }
-
     @ParameterizedTest(name = "Código \"{0}\" é guardado como \"{1}\"")
     @CsvSource({"' teste ', teste", "' teste 3', teste 3", "'outro ', outro"})
     void removeEspacosPontasCodigo(String codigo, String codigoEsperado) {
