@@ -88,7 +88,8 @@ class ProprietariosTest {
         );
 
         assertThatThrownBy(() -> new Proprietarios(proprietariosRepetidos))
-                .isInstanceOf(RegraDeDominioException.class);
+                .isInstanceOf(RegraDeDominioException.class)
+                .hasMessageContaining(PESSOA_A.toString());
     }
 
     @Test

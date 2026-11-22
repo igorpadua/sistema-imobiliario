@@ -1,8 +1,8 @@
 package io.github.igorpadua.imoveis.imovel;
 
 import java.math.BigDecimal;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
+import java.util.stream.Collectors;
 
 public record Proprietarios(List<Proprietario> proprietarios) {
 
@@ -23,13 +23,16 @@ public record Proprietarios(List<Proprietario> proprietarios) {
 
         proprietarios = List.copyOf(proprietarios);
 
-        long quantidadeDePessoasDistintas = proprietarios.stream()
-                .map(Proprietario::pessoaId)
-                .distinct()
-                .count();
+        Set<UUID> pessoasRepetidas = proprietarios.stream()
+                .collect(Collectors.groupingBy(Proprietario::pessoaId, LinkedHashMap::new, Collectors.counting()))
+                .entrySet().stream()
+                .filter(entry -> entry.getValue() > 1)
+                .map(Map.Entry::getKey)
+                .collect(Collectors.toCollection(LinkedHashSet::new));
 
-        if (quantidadeDePessoasDistintas != proprietarios.size()) {
-            throw new RegraDeDominioException("Cada pessoa pode aparecer uma única vez na lista de proprietários.");
+        if (!pessoasRepetidas.isEmpty()) {
+            throw new RegraDeDominioException("Cada pessoa pode aparecer uma única vez na lista de proprietários (pessoaId repetidos: "
+                    + pessoasRepetidas.stream().map(UUID::toString).collect(Collectors.joining(", ")) + ").");
         }
 
         BigDecimal somaPercentuais = proprietarios.stream()
