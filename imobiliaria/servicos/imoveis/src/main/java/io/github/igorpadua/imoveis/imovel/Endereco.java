@@ -19,18 +19,13 @@ public record Endereco(String logradouro, String numero, String complemento, Str
             throw new RegraDeDominioException("Longitude deve estar entre -180 e 180 (informada: " + longitude + ").");
         }
 
-        logradouro = obrigatorio(logradouro, "logradouro");
-        bairro = obrigatorio(bairro, "bairro");
-        cidade = obrigatorio(cidade, "cidade");
-        numero = obrigatorio(numero, "número");
-        cep = obrigatorio(cep, "CEP");
+        logradouro = Textos.obrigatorio(logradouro, "logradouro");
+        bairro = Textos.obrigatorio(bairro, "bairro");
+        cidade = Textos.obrigatorio(cidade, "cidade");
+        numero = Textos.obrigatorio(numero, "número");
+        cep = Textos.obrigatorio(cep, "CEP");
 
-        if (complemento != null) {
-            complemento = complemento.strip();
-            if (complemento.isEmpty()) {
-                complemento = null;
-            }
-        }
+        complemento = Textos.opcional(complemento);
 
         if (uf == null) {
             throw new RegraDeDominioException("O campo UF é obrigatório.");
@@ -42,13 +37,6 @@ public record Endereco(String logradouro, String numero, String complemento, Str
         }
 
         cep = cep.replace("-", "");
-    }
-
-    private static String obrigatorio(String valor, String campo) {
-        if (valor == null || valor.isBlank()) {
-            throw new RegraDeDominioException("O campo " + campo + " é obrigatório e não pode ficar em branco.");
-        }
-        return valor.strip();
     }
 
 }
