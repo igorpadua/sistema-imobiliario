@@ -26,10 +26,10 @@ public class Imovel {
 
     private Imovel(String codigo, TipoImovel tipo, UsoImovel uso, Endereco endereco, Caracteristicas caracteristicas,
                    String matricula, String inscricaoIptu) {
-        campoObrigatorio(tipo, "Tipo imóvel");
-        campoObrigatorio(uso, "Uso");
-        campoObrigatorio(endereco, "Endereço");
-        campoObrigatorio(caracteristicas, "Características");
+        campoObrigatorio(tipo, "tipo");
+        campoObrigatorio(uso, "uso");
+        campoObrigatorio(endereco, "endereço");
+        campoObrigatorio(caracteristicas, "características");
         this.codigo = Textos.obrigatorio(codigo, "código");
 
         this.id = GERADOR_DE_ID.generate();
@@ -52,7 +52,7 @@ public class Imovel {
     }
 
     public void definirProprietarios(Proprietarios proprietarios) {
-        campoObrigatorio(proprietarios, "proprietarios");
+        campoObrigatorio(proprietarios, "proprietários");
         this.proprietarios = proprietarios;
     }
 

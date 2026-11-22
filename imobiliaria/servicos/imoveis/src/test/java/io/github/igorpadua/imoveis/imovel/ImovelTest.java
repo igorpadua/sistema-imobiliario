@@ -98,42 +98,42 @@ class ImovelTest {
     }
 
     @Test
-    void recusaCaracteristicasNulo() {
+    void recusaCaracteristicasNulas() {
         assertThatThrownBy(() -> umImovel().comCaracteristicas(null).build())
             .isInstanceOf(RegraDeDominioException.class);
     }
 
     @Test
-    void imovelAceitaMatriculaNulo() {
+    void aceitaMatriculaNula() {
         assertThat(umImovel().comMatricula(null).build().matricula()).isNull();
     }
 
-    @ParameterizedTest(name = "Recusa código \"{0}\"")
+    @ParameterizedTest(name = "Matrícula \"{0}\" é guardada como nula")
     @NullAndEmptySource
     @ValueSource(strings = {" ", "  ", "\t"})
-    void imovelTransformaMatriculaEmNuloSeVazio(String matricula) {
+    void transformaMatriculaVaziaEmNula(String matricula) {
         assertThat(umImovel().comMatricula(matricula).build().matricula()).isNull();
     }
 
-    @ParameterizedTest(name = "Matricula \"{0}\" é guardado como \"{1}\"")
+    @ParameterizedTest(name = "Matrícula \"{0}\" é guardada como \"{1}\"")
     @CsvSource({"' teste ', teste", "' teste 3', teste 3", "'outro ', outro"})
     void removeEspacosPontasMatricula(String matricula, String matriculaEsperada) {
         assertThat(umImovel().comMatricula(matricula).build().matricula()).isEqualTo(matriculaEsperada);
     }
 
     @Test
-    void imovelAceitaInscricaoIPTUNulo() {
+    void aceitaInscricaoIptuNula() {
         assertThat(umImovel().comInscricaoIptu(null).build().inscricaoIptu()).isNull();
     }
 
-    @ParameterizedTest(name = "Recusa código \"{0}\"")
+    @ParameterizedTest(name = "Inscrição de IPTU \"{0}\" é guardada como nula")
     @NullAndEmptySource
     @ValueSource(strings = {" ", "  ", "\t"})
-    void imovelTransformaInscricaoEmNuloSeVazio(String matricula) {
-        assertThat(umImovel().comInscricaoIptu(matricula).build().inscricaoIptu()).isNull();
+    void transformaInscricaoIptuVaziaEmNula(String inscricaoIptu) {
+        assertThat(umImovel().comInscricaoIptu(inscricaoIptu).build().inscricaoIptu()).isNull();
     }
 
-    @ParameterizedTest(name = "Inscrição IPTU \"{0}\" é guardado como \"{1}\"")
+    @ParameterizedTest(name = "Inscrição de IPTU \"{0}\" é guardada como \"{1}\"")
     @CsvSource({"' teste ', teste", "' teste 3', teste 3", "'outro ', outro"})
     void removeEspacosPontasInscricaoIptu(String inscricaoIptu, String inscricaoIptuEsperada) {
         assertThat(umImovel().comInscricaoIptu(inscricaoIptu).build().inscricaoIptu()).isEqualTo(inscricaoIptuEsperada);
@@ -153,7 +153,7 @@ class ImovelTest {
     }
 
     @Test
-    void numImovelSemProprietariosTrocaAListaInteiraDeProprietarios() {
+    void numImovelSemProprietariosGravaAListaInformada() {
         Imovel imovel = umImovel().build();
         assertThat(imovel.proprietarios()).isNull();
         Proprietarios proprietarios = new Proprietarios(List.of(new Proprietario(UUID.randomUUID(), new BigDecimal("100"))));
@@ -173,7 +173,8 @@ class ImovelTest {
 
     @Test
     void numImovelComProprietariosRecusaListaNula() {
-        Imovel imovel = umImovel().build();
+        Proprietarios proprietarios = new Proprietarios(List.of(new Proprietario(UUID.randomUUID(), new BigDecimal("100"))));
+        Imovel imovel = umImovel().comProprietarios(proprietarios).build();
         assertThatThrownBy(() -> imovel.definirProprietarios(null))
                 .isInstanceOf(RegraDeDominioException.class);
     }
