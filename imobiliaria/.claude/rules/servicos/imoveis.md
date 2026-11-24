@@ -38,6 +38,9 @@ Responsabilidade: catálogo, proprietários com percentual de posse, captação,
   - RASCUNHO → ATIVO e INATIVO → ATIVO exigem proprietários definidos. A soma 100 é invariante da lista (value object), então um imóvel ativo nunca tem soma diferente de 100.
   - RASCUNHO → INATIVO descarta o cadastro. Não há exclusão física de imóvel nem `DELETE` na API. Um estado `DESCARTADO`, sem volta, fica para quando houver necessidade.
   - Inativar é recusado com `ocupacao` LOCADO (implementado na etapa 5, com o listener `contratoativado`). Eventos de Contratos não são recusados, então INATIVO + LOCADO pode surgir por atraso de evento e é tolerado.
+  - Transição para o mesmo estado (ATIVO → ATIVO, INATIVO → INATIVO) é recusada com a exceção de domínio, não ignorada: ignorar esconderia o erro de quem chamou (clique duplo, tela desatualizada). Repetir com segurança é papel do `If-Match` na API.
+  - Não há volta para RASCUNHO (nem de ATIVO, nem de INATIVO). Para tirar um imóvel da vitrine, inativa-se.
+  - As transições não geram evento por enquanto. Um evento como `ImovelAtivado` nasce quando houver consumidor (Oferta ou Contratos).
 - **Proprietários:**
   - lista num value object, com percentual de posse em quatro casas decimais (`numeric(7,4)`). Um valor com mais de quatro casas significativas é recusado, não arredondado; zeros à direita não contam (`33.33330` vale `33.3333`). O percentual é guardado sempre com escala 4;
   - invariantes da lista: não vazia, `pessoaId` e percentual obrigatórios, cada percentual > 0, soma exatamente 100 e cada `pessoaId` uma única vez (repetido costuma ser erro de seleção e esconde outro proprietário). Com todos > 0 e soma 100, nenhum passa de 100, então não há checagem de ≤ 100;
