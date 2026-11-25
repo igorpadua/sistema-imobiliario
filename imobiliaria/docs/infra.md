@@ -47,6 +47,7 @@ O `-v` apaga os volumes: dados do Postgres, tópicos, offsets dos consumer group
 
 - As credenciais de desenvolvimento estão no `.env-exemplo`. Não copie as senhas para outros arquivos.
 - Só os roles do serviço conectam no database dele: o `CONNECT` foi revogado de `PUBLIC`.
+- Ordenação de texto pelo ICU, com locale `pt-BR`, definida para o servidor inteiro no `initdb` (`POSTGRES_INITDB_ARGS`): a imagem é Alpine, e a biblioteca C dela (musl) não ordena por idioma.
 - Novo serviço: um script `NN-<servico>.sql` em `infra/postgres/docker-entrypoint-initdb.d/`, as senhas novas no `.env-exemplo` e no `environment` do `postgres`, e um reset para o script rodar.
 
 ## Comandos úteis
