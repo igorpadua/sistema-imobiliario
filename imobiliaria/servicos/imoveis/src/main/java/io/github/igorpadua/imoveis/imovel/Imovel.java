@@ -56,6 +56,23 @@ public class Imovel {
         this.proprietarios = proprietarios;
     }
 
+    public void ativar() {
+        if (this.situacao == Situacao.ATIVO) {
+            throw new RegraDeDominioException("O imóvel já está ativo.");
+        }
+        if (this.proprietarios == null) {
+            throw new RegraDeDominioException("O imóvel precisa ter proprietário definido para ser ativado.");
+        }
+        this.situacao = Situacao.ATIVO;
+    }
+
+    public void inativar() {
+        if (this.situacao == Situacao.INATIVO) {
+            throw new RegraDeDominioException("O imóvel já está inativo.");
+        }
+        this.situacao = Situacao.INATIVO;
+    }
+
     private void campoObrigatorio(Object valor, String campo) {
         if (valor == null) {
             throw new RegraDeDominioException("O campo " + campo + " é obrigatório.");

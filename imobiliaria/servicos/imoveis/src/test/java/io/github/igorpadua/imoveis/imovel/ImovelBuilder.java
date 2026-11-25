@@ -1,5 +1,9 @@
 package io.github.igorpadua.imoveis.imovel;
 
+import java.math.BigDecimal;
+import java.util.List;
+import java.util.UUID;
+
 class ImovelBuilder {
 
     private String codigo = "QUALQUER";
@@ -53,6 +57,10 @@ class ImovelBuilder {
     ImovelBuilder comProprietarios(Proprietarios proprietarios) {
         this.proprietarios = proprietarios;
         return this;
+    }
+
+    ImovelBuilder comUmProprietario() {
+        return comProprietarios(new Proprietarios(List.of(new Proprietario(UUID.randomUUID(), new BigDecimal("100")))));
     }
 
     Imovel build() {

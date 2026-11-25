@@ -173,8 +173,7 @@ class ImovelTest {
 
     @Test
     void numImovelComProprietariosRecusaListaNula() {
-        Proprietarios proprietarios = new Proprietarios(List.of(new Proprietario(UUID.randomUUID(), new BigDecimal("100"))));
-        Imovel imovel = umImovel().comProprietarios(proprietarios).build();
+        Imovel imovel = umImovel().comUmProprietario().build();
         assertThatThrownBy(() -> imovel.definirProprietarios(null))
                 .isInstanceOf(RegraDeDominioException.class);
     }
@@ -183,6 +182,71 @@ class ImovelTest {
     @CsvSource({"' teste ', teste", "' teste 3', teste 3", "'outro ', outro"})
     void removeEspacosPontasCodigo(String codigo, String codigoEsperado) {
         assertThat(umImovel().comCodigo(codigo).build().codigo()).isEqualTo(codigoEsperado);
+    }
+
+    @Test
+    void ativaRascunhoComProprietarios() {
+        Imovel imovel = umImovel().comUmProprietario().build();
+        imovel.ativar();
+        assertThat(imovel.situacao()).isEqualTo(Situacao.ATIVO);
+    }
+
+    @Test
+    void recusaAtivarRascunhoSemProprietarios() {
+        Imovel imovel = umImovel().build();
+        assertThatThrownBy(imovel::ativar)
+                .isInstanceOf(RegraDeDominioException.class);
+        assertThat(imovel.situacao()).isEqualTo(Situacao.RASCUNHO);
+    }
+
+    @Test
+    void recusaAtivarImovelJaAtivo() {
+        Imovel imovel = umImovel().comUmProprietario().build();
+        imovel.ativar();
+        assertThatThrownBy(imovel::ativar)
+                .isInstanceOf(RegraDeDominioException.class);
+        assertThat(imovel.situacao()).isEqualTo(Situacao.ATIVO);
+    }
+
+    @Test
+    void inativaRascunho() {
+        Imovel imovel = umImovel().build();
+        imovel.inativar();
+        assertThat(imovel.situacao()).isEqualTo(Situacao.INATIVO);
+    }
+
+    @Test
+    void recusaInativarUmImovelJaInativo() {
+        Imovel imovel = umImovel().build();
+        imovel.inativar();
+        assertThatThrownBy(imovel::inativar)
+                .isInstanceOf(RegraDeDominioException.class);
+        assertThat(imovel.situacao()).isEqualTo(Situacao.INATIVO);
+    }
+
+    @Test
+    void reativaUmInativoComProprietarios() {
+        Imovel imovel = umImovel().comUmProprietario().build();
+        imovel.inativar();
+        imovel.ativar();
+        assertThat(imovel.situacao()).isEqualTo(Situacao.ATIVO);
+    }
+
+    @Test
+    void recusaReativarUmInativoSemProprietarios() {
+        Imovel imovel = umImovel().build();
+        imovel.inativar();
+        assertThatThrownBy(imovel::ativar)
+                .isInstanceOf(RegraDeDominioException.class);
+        assertThat(imovel.situacao()).isEqualTo(Situacao.INATIVO);
+    }
+
+    @Test
+    void inativaUmAtivo() {
+        Imovel imovel = umImovel().comUmProprietario().build();
+        imovel.ativar();
+        imovel.inativar();
+        assertThat(imovel.situacao()).isEqualTo(Situacao.INATIVO);
     }
 
 }
